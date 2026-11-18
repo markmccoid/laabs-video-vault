@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "LAABS Video Vault",
+    "slug": "laabs-video-vault",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.markmccoid.laabs-video-vault",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.markmccoid.laabs-video-vault"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.markmccoid.laabsvideovault"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "laabsvideovault",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-image"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "laabs-video-vault",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "npm@11.19.0",
+  "scripts": {
+    "dev:backend": "npm run dev -w @lvv/backend",
+    "dev:mobile": "npm run start -w @lvv/mobile",
+    "ios": "npm run ios -w @lvv/mobile",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.12"
+  },
+  "overrides": {
+    "react": "19.3.0"
+  }
+}

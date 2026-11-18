@@ -1,0 +1,22 @@
+{
+  "name": "@lvv/backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy",
+    "typecheck": "tsc --noEmit -p convex",
+    "auth:keys": "node scripts/setup-auth-keys.mjs"
+  },
+  "dependencies": {
+    "@auth/core": "0.41.1",
+    "@convex-dev/auth": "~0.0.98",
+    "@lvv/core": "*",
+    "convex": "^1.50.0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "@types/node": "^24",
+    "jose": "^5.2.2"
+  }
+}
