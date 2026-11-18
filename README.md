@@ -62,7 +62,7 @@ Set `EXPO_PUBLIC_CONVEX_URL` to the `CONVEX_URL` value from `packages/backend/.e
 npm run ios
 ```
 
-Every native module used so far ships in Expo Go. Build a dev client (`npx expo run:ios` in `apps/mobile`) before Phase 3, because the share extension needs one.
+`npm run ios` builds a dev client (`expo run:ios`). Rebuild after adding any package with native code (for example `react-native-webview`).
 
 ## TestFlight
 
@@ -115,12 +115,14 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 - **Search:** one `searchText` field per video (title, channel, tags, notes, description), rebuilt by `convex/lib/search.ts`.
 - **Sharing:** personal library only. Folders will be shared by exporting/importing a `.vfolder` JSON file (Phase 6).
 - **Thumbnails:** cached in Convex storage, so cards survive deleted or private videos.
-- **Chapters:** chapters parsed from the description are stored as `bookmarks` with `source: "chapter"`.
+- **Chapters:** chapters parsed from the description are stored as `bookmarks` with `source: "chapter"`. Tapping one seeks the embedded player.
+- **Player:** the YouTube IFrame API inside `react-native-webview`, loaded from base URL `https://com.markmccoid.laabs-video-vault`. YouTube rejects WebView embeds without an https Referer (errors 152/153), so don't remove the base URL. Videos whose owners block embedding (errors 101/150) show an "Open in YouTube" card. AirPlay is enabled on the player (test on a real device); Chromecast isn't possible in an iOS web embed, so "Open in YouTube" covers casting.
+- **List/grid:** the view mode is a per-device preference in AsyncStorage (`src/lib/viewMode.ts`).
 
 ## Phase plan
 
 0. **Foundation** ✅ monorepo, Convex schema, auth, Expo app. *Remaining: first TestFlight build.*
-1. **Capture & library (iOS)**: paste ✅, metadata ✅, Shorts ✅, Inbox ✅, detail ✅. *Next: embedded IFrame player with "Open in YouTube" fallback, grid view.*
+1. **Capture & library (iOS)** ✅ paste, metadata, Shorts, Inbox, detail, embedded IFrame player with "Open in YouTube" fallback, list/grid toggle.
 2. **Organization & finding**: nested folders, tags, multi-select, search + filter chips, Trash view.
 3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), clipboard detection, Shortcuts.
 4. **Timestamp bookmarks**: capture at the current time, seek, search, share `?t=` links.

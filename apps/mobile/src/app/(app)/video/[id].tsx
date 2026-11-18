@@ -1,8 +1,7 @@
 import { formatDuration, watchUrl } from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
-import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,13 +13,11 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { YouTubePlayer, type YouTubePlayerHandle } from "@/components/YouTubePlayer";
 import { api, type Id } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 
-/**
- * Sprint 1 detail screen: metadata, chapters, notes, open in YouTube.
- * Next sprint: embedded IFrame player above the fold (with "Open in YouTube" fallback).
- */
+/** Detail screen: embedded player, metadata, chapters (seek the player), notes. */
 export default function VideoDetail() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: Id<"videos"> }>();
@@ -32,6 +29,7 @@ export default function VideoDetail() {
 
   const [notes, setNotes] = useState<string | null>(null);
   const [showDescription, setShowDescription] = useState(false);
+  const player = useRef<YouTubePlayerHandle>(null);
 
   useEffect(() => {
     void markOpened({ videoId: id });
@@ -39,7 +37,7 @@ export default function VideoDetail() {
 
   if (video === undefined) return <ActivityIndicator style={{ marginTop: 40 }} />;
 
-  const open = (seconds?: number) => void Linking.openURL(watchUrl(video.youtubeId, seconds));
+  const openInYouTube = () => void Linking.openURL(watchUrl(video.youtubeId));
   const chapters = video.bookmarks.filter((b) => b.source === "chapter");
 
   const confirmTrash = () =>
@@ -56,13 +54,8 @@ export default function VideoDetail() {
     ]);
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={() => open()}>
-        <Image source={video.thumbnail} style={styles.hero} contentFit="cover" />
-        <View style={styles.playBadge}>
-          <Text style={styles.playText}>▶ Open in YouTube</Text>
-        </View>
-      </Pressable>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+      <YouTubePlayer ref={player} youtubeId={video.youtubeId} thumbnail={video.thumbnail} />
 
       <View style={styles.section}>
         <Text style={[styles.title, { color: theme.text }]}>{video.title || "Loading…"}</Text>
@@ -75,6 +68,9 @@ export default function VideoDetail() {
             .filter(Boolean)
             .join(" · ")}
         </Text>
+        <Pressable onPress={openInYouTube} hitSlop={6} style={styles.openLink}>
+          <Text style={{ color: theme.accent, fontWeight: "600" }}>Open in YouTube ↗</Text>
+        </Pressable>
 
         {video.tags.length > 0 && (
           <View style={styles.tags}>
@@ -116,7 +112,7 @@ export default function VideoDetail() {
         <View style={styles.section}>
           <Text style={[styles.heading, { color: theme.text }]}>Chapters</Text>
           {chapters.map((c) => (
-            <Pressable key={c._id} style={styles.chapter} onPress={() => open(c.seconds)}>
+            <Pressable key={c._id} style={styles.chapter} onPress={() => player.current?.seekTo(c.seconds)}>
               <Text style={[styles.chapterTime, { color: theme.accent }]}>{formatDuration(c.seconds)}</Text>
               <Text style={[styles.chapterLabel, { color: theme.text }]}>{c.label}</Text>
             </Pressable>
@@ -144,17 +140,7 @@ export default function VideoDetail() {
 
 const styles = StyleSheet.create({
   content: { paddingBottom: 48 },
-  hero: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#0003" },
-  playBadge: {
-    position: "absolute",
-    right: 12,
-    bottom: 12,
-    backgroundColor: "#000B",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  playText: { color: "#fff", fontWeight: "700" },
+  openLink: { alignSelf: "flex-start" },
   section: { paddingHorizontal: 16, paddingTop: 16, gap: 8 },
   title: { fontSize: 20, fontWeight: "700", lineHeight: 26 },
   heading: { fontSize: 17, fontWeight: "700" },
