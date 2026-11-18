@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { errorMessage } from "@/lib/errors";
+import { authErrorMessage } from "@/lib/authErrors";
 import { useTheme } from "@/lib/theme";
 
 type Flow = "signIn" | "signUp";
@@ -30,14 +30,7 @@ export default function SignIn() {
     try {
       await signIn("password", { email: email.trim().toLowerCase(), password, flow });
     } catch (err) {
-      const msg = errorMessage(err);
-      setError(
-        flow === "signIn"
-          ? "Couldn't sign in. Check your email and password."
-          : msg.includes("password")
-            ? "Password must be at least 8 characters."
-            : "Couldn't create an account. The email may already be in use.",
-      );
+      setError(authErrorMessage(err, flow));
     } finally {
       setBusy(false);
     }

@@ -8,6 +8,11 @@ if (!url) {
     "EXPO_PUBLIC_CONVEX_URL is not set. Copy apps/mobile/.env.example to apps/mobile/.env.local (see README).",
   );
 }
+// ConvexReactClient only checks for "://", so a typo like "==https://…" slips through
+// and every request then fails. Catch it here instead.
+if (!/^https?:\/\/[^\s]+$/.test(url)) {
+  throw new Error(`EXPO_PUBLIC_CONVEX_URL is malformed: "${url}". Expected https://<name>.convex.cloud`);
+}
 
 export const convex = new ConvexReactClient(url, { unsavedChangesWarning: false });
 

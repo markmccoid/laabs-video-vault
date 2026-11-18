@@ -6,7 +6,6 @@ export default function AppLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: theme.card },
         headerTintColor: theme.text,
         contentStyle: { backgroundColor: theme.bg },
       }}
