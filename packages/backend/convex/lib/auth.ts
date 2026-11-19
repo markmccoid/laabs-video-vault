@@ -20,3 +20,33 @@ export async function requireOwnedVideo(ctx: QueryCtx | MutationCtx, videoId: Id
   if (!video || video.userId !== userId) throw new ConvexError("Video not found");
   return { userId, video };
 }
+
+/** Most videos a single bulk call may touch. */
+export const MAX_BULK = 200;
+
+/** Load several videos and confirm every one belongs to the signed-in user. */
+export async function requireOwnedVideos(ctx: QueryCtx | MutationCtx, videoIds: Id<"videos">[]) {
+  if (videoIds.length > MAX_BULK) throw new ConvexError(`Select at most ${MAX_BULK} videos at a time.`);
+  const userId = await requireUserId(ctx);
+  const unique = [...new Set(videoIds)];
+  const videos = await Promise.all(unique.map((id) => ctx.db.get(id)));
+  const owned = videos.filter((v) => v !== null && v.userId === userId);
+  if (owned.length !== unique.length) throw new ConvexError("Video not found");
+  return { userId, videos: owned as NonNullable<(typeof videos)[number]>[] };
+}
+
+/** Load a folder and confirm it belongs to the signed-in user. */
+export async function requireOwnedFolder(ctx: QueryCtx | MutationCtx, folderId: Id<"folders">) {
+  const userId = await requireUserId(ctx);
+  const folder = await ctx.db.get(folderId);
+  if (!folder || folder.userId !== userId) throw new ConvexError("Folder not found");
+  return { userId, folder };
+}
+
+/** Load a tag and confirm it belongs to the signed-in user. */
+export async function requireOwnedTag(ctx: QueryCtx | MutationCtx, tagId: Id<"tags">) {
+  const userId = await requireUserId(ctx);
+  const tag = await ctx.db.get(tagId);
+  if (!tag || tag.userId !== userId) throw new ConvexError("Tag not found");
+  return { userId, tag };
+}

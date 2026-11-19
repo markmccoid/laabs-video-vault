@@ -2,8 +2,8 @@ import { buildSearchText, parseYouTubeUrl, thumbnailUrl } from "@lvv/core";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query, type QueryCtx } from "./_generated/server";
-import { requireOwnedVideo, requireUserId } from "./lib/auth";
+import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { requireOwnedFolder, requireOwnedTag, requireOwnedVideo, requireOwnedVideos, requireUserId } from "./lib/auth";
 import { rebuildSearchText } from "./lib/search";
 import { attachTag, ensureShortTag, tagsForVideo } from "./lib/tags";
 
@@ -12,6 +12,46 @@ import { attachTag, ensureShortTag, tagsForVideo } from "./lib/tags";
 async function withThumb(ctx: QueryCtx, video: Doc<"videos">) {
   const cachedThumb = video.thumbStorageId ? await ctx.storage.getUrl(video.thumbStorageId) : null;
   return { ...video, thumbnail: cachedThumb ?? video.thumbUrl };
+}
+
+/** Most videos a list or search returns. TODO: paginate when libraries get large. */
+const LIST_LIMIT = 200;
+
+async function tagIdsForVideo(ctx: QueryCtx, videoId: Id<"videos">): Promise<Set<string>> {
+  const links = await ctx.db
+    .query("videoTags")
+    .withIndex("by_video", (q) => q.eq("videoId", videoId))
+    .collect();
+  return new Set(links.map((l) => l.tagId));
+}
+
+/** Permanently delete a video with its tag links, bookmarks, and cached thumbnail. */
+async function hardDelete(ctx: MutationCtx, video: Doc<"videos">) {
+  const [links, bookmarks] = await Promise.all([
+    ctx.db
+      .query("videoTags")
+      .withIndex("by_video", (q) => q.eq("videoId", video._id))
+      .collect(),
+    ctx.db
+      .query("bookmarks")
+      .withIndex("by_video_time", (q) => q.eq("videoId", video._id))
+      .collect(),
+  ]);
+  for (const doc of [...links, ...bookmarks]) await ctx.db.delete(doc._id);
+  if (video.thumbStorageId) await ctx.storage.delete(video.thumbStorageId);
+  await ctx.db.delete(video._id);
+}
+
+const TRASH_BATCH = 50;
+
+/** Delete up to one batch of the user's trashed videos. Returns true if more remain. */
+async function purgeTrashBatch(ctx: MutationCtx, userId: Id<"users">): Promise<boolean> {
+  const batch = await ctx.db
+    .query("videos")
+    .withIndex("by_user_deleted", (q) => q.eq("userId", userId).gte("deletedAt", 0))
+    .take(TRASH_BATCH + 1);
+  for (const video of batch.slice(0, TRASH_BATCH)) await hardDelete(ctx, video);
+  return batch.length > TRASH_BATCH;
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────
@@ -105,6 +145,106 @@ export const listByFolder = query({
   },
 });
 
+/** Videos with a tag, newest first. */
+export const listByTag = query({
+  args: { tagId: v.id("tags") },
+  handler: async (ctx, { tagId }) => {
+    const { userId } = await requireOwnedTag(ctx, tagId);
+    const links = await ctx.db
+      .query("videoTags")
+      .withIndex("by_user_tag", (q) => q.eq("userId", userId).eq("tagId", tagId))
+      .order("desc")
+      .take(LIST_LIMIT);
+    const videos = await Promise.all(links.map((l) => ctx.db.get(l.videoId)));
+    const live = videos.filter((vid): vid is Doc<"videos"> => vid !== null && vid.deletedAt === undefined);
+    live.sort((a, b) => b._creationTime - a._creationTime);
+    return await Promise.all(live.map((vid) => withThumb(ctx, vid)));
+  },
+});
+
+/** Tag IDs on each of the given videos, in the same order (for the tag picker). */
+export const tagsForVideos = query({
+  args: { videoIds: v.array(v.id("videos")) },
+  handler: async (ctx, { videoIds }) => {
+    const { videos } = await requireOwnedVideos(ctx, videoIds);
+    const byId = new Map(
+      await Promise.all(videos.map(async (vid) => [vid._id, [...(await tagIdsForVideo(ctx, vid._id))]] as const)),
+    );
+    return videoIds.map((id) => (byId.get(id) ?? []) as Id<"tags">[]);
+  },
+});
+
+/** Trashed videos, most recently trashed first. */
+export const listTrash = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const videos = await ctx.db
+      .query("videos")
+      .withIndex("by_user_deleted", (q) => q.eq("userId", userId).gte("deletedAt", 0))
+      .order("desc")
+      .take(LIST_LIMIT);
+    return await Promise.all(videos.map((vid) => withThumb(ctx, vid)));
+  },
+});
+
+/**
+ * Search the library. Text matches title, channel, tags, notes, and
+ * description; tag chips require every chosen tag; `shorts` narrows to or
+ * hides Shorts. With no text, the tag/Shorts filters alone pick the videos.
+ */
+export const search = query({
+  args: {
+    text: v.string(),
+    tagIds: v.array(v.id("tags")),
+    shorts: v.optional(v.union(v.literal("only"), v.literal("hide"))),
+  },
+  handler: async (ctx, { text, tagIds, shorts }) => {
+    const userId = await requireUserId(ctx);
+    const query = text.trim();
+    let candidates: Doc<"videos">[];
+
+    if (query) {
+      candidates = await ctx.db
+        .query("videos")
+        .withSearchIndex("search", (q) => {
+          const base = q.search("searchText", query).eq("userId", userId);
+          return shorts ? base.eq("isShort", shorts === "only") : base;
+        })
+        .take(LIST_LIMIT);
+    } else if (tagIds.length > 0) {
+      const links = await ctx.db
+        .query("videoTags")
+        .withIndex("by_user_tag", (q) => q.eq("userId", userId).eq("tagId", tagIds[0]!))
+        .take(1000);
+      const docs = await Promise.all(links.map((l) => ctx.db.get(l.videoId)));
+      candidates = docs.filter((d) => d !== null);
+      candidates.sort((a, b) => b._creationTime - a._creationTime);
+    } else if (shorts === "only") {
+      candidates = await ctx.db
+        .query("videos")
+        .withIndex("by_user_youtubeId", (q) => q.eq("userId", userId))
+        .take(1000);
+      candidates.sort((a, b) => b._creationTime - a._creationTime);
+    } else {
+      return [];
+    }
+
+    const results: Doc<"videos">[] = [];
+    for (const video of candidates) {
+      if (video.deletedAt !== undefined) continue;
+      if (shorts && video.isShort !== (shorts === "only")) continue;
+      if (tagIds.length > 0) {
+        const has = await tagIdsForVideo(ctx, video._id);
+        if (!tagIds.every((id) => has.has(id))) continue;
+      }
+      results.push(video);
+      if (results.length >= LIST_LIMIT) break;
+    }
+    return await Promise.all(results.map((vid) => withThumb(ctx, vid)));
+  },
+});
+
 /** Full detail for one video: tags + bookmarks (chapters included). */
 export const get = query({
   args: { videoId: v.id("videos") },
@@ -150,8 +290,65 @@ export const trash = mutation({
 export const restore = mutation({
   args: { videoId: v.id("videos") },
   handler: async (ctx, { videoId }) => {
-    await requireOwnedVideo(ctx, videoId);
-    await ctx.db.patch(videoId, { deletedAt: undefined });
+    const { video } = await requireOwnedVideo(ctx, videoId);
+    await ctx.db.patch(videoId, { deletedAt: undefined, folderId: await liveFolderId(ctx, video) });
+  },
+});
+
+/** The video's folder if it still exists, otherwise undefined (Inbox). */
+async function liveFolderId(ctx: MutationCtx, video: Doc<"videos">) {
+  return video.folderId && (await ctx.db.get(video.folderId)) ? video.folderId : undefined;
+}
+
+/** Move videos into a folder, or to the Inbox when folderId is omitted. */
+export const move = mutation({
+  args: { videoIds: v.array(v.id("videos")), folderId: v.optional(v.id("folders")) },
+  handler: async (ctx, { videoIds, folderId }) => {
+    const { videos } = await requireOwnedVideos(ctx, videoIds);
+    if (folderId) await requireOwnedFolder(ctx, folderId);
+    for (const video of videos) await ctx.db.patch(video._id, { folderId });
+  },
+});
+
+export const trashMany = mutation({
+  args: { videoIds: v.array(v.id("videos")) },
+  handler: async (ctx, { videoIds }) => {
+    const { videos } = await requireOwnedVideos(ctx, videoIds);
+    const now = Date.now();
+    for (const video of videos) if (video.deletedAt === undefined) await ctx.db.patch(video._id, { deletedAt: now });
+  },
+});
+
+export const restoreMany = mutation({
+  args: { videoIds: v.array(v.id("videos")) },
+  handler: async (ctx, { videoIds }) => {
+    const { videos } = await requireOwnedVideos(ctx, videoIds);
+    for (const video of videos) {
+      await ctx.db.patch(video._id, { deletedAt: undefined, folderId: await liveFolderId(ctx, video) });
+    }
+  },
+});
+
+/** Permanently delete videos. Only videos already in the Trash can be deleted. */
+export const deleteForever = mutation({
+  args: { videoIds: v.array(v.id("videos")) },
+  handler: async (ctx, { videoIds }) => {
+    const { videos } = await requireOwnedVideos(ctx, videoIds);
+    if (videos.some((vid) => vid.deletedAt === undefined)) {
+      throw new ConvexError("Move videos to the Trash before deleting them.");
+    }
+    for (const video of videos) await hardDelete(ctx, video);
+  },
+});
+
+/** Permanently delete everything in the Trash (large Trashes finish in the background). */
+export const emptyTrash = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    if (await purgeTrashBatch(ctx, userId)) {
+      await ctx.scheduler.runAfter(0, internal.videos.continueEmptyTrash, { userId });
+    }
   },
 });
 
@@ -169,7 +366,19 @@ export const refreshMetadata = mutation({
   },
 });
 
-// ─── Internal (called by youtube.fetchMetadata) ─────────────────────────────
+// ─── Internal ───────────────────────────────────────────────────────────────
+
+/** Continuation for emptyTrash. Internal, so taking a userId here is safe. */
+export const continueEmptyTrash = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    if (await purgeTrashBatch(ctx, userId)) {
+      await ctx.scheduler.runAfter(0, internal.videos.continueEmptyTrash, { userId });
+    }
+  },
+});
+
+// Called by youtube.fetchMetadata:
 
 export const applyMetadata = internalMutation({
   args: {

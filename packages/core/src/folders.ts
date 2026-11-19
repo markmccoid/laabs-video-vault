@@ -87,3 +87,38 @@ export function canMoveFolder<F extends FolderLike>(
   }
   return { ok: true, newDepth };
 }
+
+/** Can a new folder be created under `parent` (undefined = top level)? */
+export function canCreateFolderUnder(parent: Pick<FolderLike, "depth"> | undefined): MoveCheck {
+  const newDepth = parent ? parent.depth + 1 : 0;
+  if (newDepth >= MAX_FOLDER_DEPTH) {
+    return { ok: false, reason: `Folders can only be nested ${MAX_FOLDER_DEPTH} levels deep.` };
+  }
+  return { ok: true, newDepth };
+}
+
+/** Names from the top-level folder down to `folderId`, e.g. ["Cooking", "Baking"]. */
+export function folderPath<F extends FolderLike>(folders: F[], folderId: F["_id"]): string[] {
+  const byId = new Map<string, F>(folders.map((f) => [f._id, f]));
+  const path: string[] = [];
+  let current = byId.get(folderId);
+  // Depth is capped, but guard against bad data forming a loop.
+  for (let i = 0; current && i <= MAX_FOLDER_DEPTH; i++) {
+    path.unshift(current.name);
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+  return path;
+}
+
+/** Depth-first, sorted list of a tree, for indented pickers. */
+export function flattenFolderTree<F extends FolderLike>(tree: FolderNode<F>[]): FolderNode<F>[] {
+  const out: FolderNode<F>[] = [];
+  const walk = (nodes: FolderNode<F>[]) => {
+    for (const n of nodes) {
+      out.push(n);
+      walk(n.children);
+    }
+  };
+  walk(tree);
+  return out;
+}

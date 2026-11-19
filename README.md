@@ -110,8 +110,10 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 
 - **Identity:** bundle ID `com.markmccoid.laabs-video-vault`, URL scheme `laabsvideovault`.
 - **Auth:** Convex Auth `~0.0.98` with email + password. Convex Auth 2.0 (released Nov 2026) is a rewrite; upgrade deliberately later. Sign in with Apple is optional: App Store rules only require it once a third-party social login is offered.
-- **Folders:** nest 3 levels max (`MAX_FOLDER_DEPTH` in `@lvv/core`). A video lives in one folder; no folder = Inbox.
-- **Tags:** many per video via the `videoTags` join table. Shorts get the built-in `short` tag automatically.
+- **Folders:** nest 3 levels max (`MAX_FOLDER_DEPTH` in `@lvv/core`). A video lives in one folder; no folder = Inbox. Deleting a folder deletes its subfolders and moves all their videos up to its parent (or the Inbox); nothing is deleted with it.
+- **Tags:** many per video via the `videoTags` join table, unique per user ignoring case. Shorts get the built-in `short` tag automatically; it can't be renamed or deleted.
+- **Trash:** soft delete (`deletedAt`). Restoring returns a video to its folder, or the Inbox if that folder is gone. "Delete Forever" and "Empty Trash" also delete tag links, bookmarks, and the cached thumbnail.
+- **Search:** text search uses the Convex search index; tag chips require every chosen tag; Shorts chips narrow to or hide Shorts. Tag chips or "Shorts only" work without any text.
 - **Search:** one `searchText` field per video (title, channel, tags, notes, description), rebuilt by `convex/lib/search.ts`.
 - **Sharing:** personal library only. Folders will be shared by exporting/importing a `.vfolder` JSON file (Phase 6).
 - **Thumbnails:** cached in Convex storage, so cards survive deleted or private videos.
@@ -123,7 +125,7 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 
 0. **Foundation** ✅ monorepo, Convex schema, auth, Expo app. *Remaining: first TestFlight build.*
 1. **Capture & library (iOS)** ✅ paste, metadata, Shorts, Inbox, detail, embedded IFrame player with "Open in YouTube" fallback, list/grid toggle.
-2. **Organization & finding**: nested folders, tags, multi-select, search + filter chips, Trash view.
+2. **Organization & finding** ✅ Library home, nested folders, tags, multi-select (move/tag/trash), search + filter chips, Trash view. *Remaining: paginate long lists (capped at 200 for now), reorder folders.*
 3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), clipboard detection, Shortcuts.
 4. **Timestamp bookmarks**: capture at the current time, seek, search, share `?t=` links.
 5. **Mac desktop**: Tauri v2, three-pane layout, ⌘K, drag & drop, global hotkey.

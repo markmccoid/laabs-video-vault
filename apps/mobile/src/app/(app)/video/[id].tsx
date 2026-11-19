@@ -1,4 +1,4 @@
-import { formatDuration, watchUrl } from "@lvv/core";
+import { folderPath, formatDuration, watchUrl } from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SymbolView } from "expo-symbols";
 import { YouTubePlayer, type YouTubePlayerHandle } from "@/components/YouTubePlayer";
 import { api, type Id } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
@@ -22,6 +23,7 @@ export default function VideoDetail() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: Id<"videos"> }>();
   const video = useQuery(api.videos.get, { videoId: id });
+  const folders = useQuery(api.folders.list);
   const updateNotes = useMutation(api.videos.updateNotes);
   const markOpened = useMutation(api.videos.markOpened);
   const trash = useMutation(api.videos.trash);
@@ -38,6 +40,8 @@ export default function VideoDetail() {
   if (video === undefined) return <ActivityIndicator style={{ marginTop: 40 }} />;
 
   const openInYouTube = () => void Linking.openURL(watchUrl(video.youtubeId));
+  const location = video.folderId && folders ? folderPath(folders, video.folderId).join(" › ") || "Inbox" : "Inbox";
+  const editTags = () => router.push({ pathname: "/tag-picker", params: { videoIds: id } });
   const chapters = video.bookmarks.filter((b) => b.source === "chapter");
 
   const confirmTrash = () =>
@@ -72,15 +76,31 @@ export default function VideoDetail() {
           <Text style={{ color: theme.accent, fontWeight: "600" }}>Open in YouTube ↗</Text>
         </Pressable>
 
-        {video.tags.length > 0 && (
-          <View style={styles.tags}>
-            {video.tags.map((t) => (
-              <Text key={t._id} style={[styles.tag, { backgroundColor: theme.border, color: theme.text }]}>
-                #{t.name}
-              </Text>
-            ))}
-          </View>
-        )}
+        <Pressable
+          style={styles.folderRow}
+          onPress={() => router.push({ pathname: "/move", params: { videoIds: id } })}
+          accessibilityRole="button"
+          accessibilityLabel={`Folder: ${location}. Move`}
+        >
+          <SymbolView name={video.folderId ? "folder" : "tray"} size={16} tintColor={theme.muted} />
+          <Text style={{ color: theme.text, flexShrink: 1 }} numberOfLines={1}>
+            {location}
+          </Text>
+          <Text style={{ color: theme.accent, fontWeight: "600" }}>Move</Text>
+        </Pressable>
+
+        <View style={styles.tags}>
+          {video.tags.map((t) => (
+            <Pressable key={t._id} onPress={() => router.push(`/tag/${t._id}`)}>
+              <Text style={[styles.tag, { backgroundColor: theme.border, color: theme.text }]}>#{t.name}</Text>
+            </Pressable>
+          ))}
+          <Pressable onPress={editTags} accessibilityRole="button" accessibilityLabel="Edit tags">
+            <Text style={[styles.tag, styles.tagEdit, { borderColor: theme.accent, color: theme.accent }]}>
+              {video.tags.length ? "Edit Tags" : "+ Add Tag"}
+            </Text>
+          </Pressable>
+        </View>
 
         {(video.metadataState === "failed" || video.metadataState === "unavailable") && (
           <Pressable onPress={() => refresh({ videoId: id })}>
@@ -146,6 +166,8 @@ const styles = StyleSheet.create({
   heading: { fontSize: 17, fontWeight: "700" },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, overflow: "hidden", fontSize: 13 },
+  tagEdit: { borderWidth: 1, fontWeight: "600" },
+  folderRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   notes: { borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 90, fontSize: 15, textAlignVertical: "top" },
   chapter: { flexDirection: "row", gap: 12, paddingVertical: 6 },
   chapterTime: { fontVariant: ["tabular-nums"], fontWeight: "600", width: 64 },

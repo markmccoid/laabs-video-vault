@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildFolderTree, canMoveFolder, descendantIds, MAX_FOLDER_DEPTH } from "./folders";
+import {
+  buildFolderTree,
+  canCreateFolderUnder,
+  canMoveFolder,
+  descendantIds,
+  flattenFolderTree,
+  folderPath,
+  MAX_FOLDER_DEPTH,
+} from "./folders";
 
 // a
 // ├─ b
@@ -44,5 +52,20 @@ describe("folders", () => {
 
   it("allows moving to top level", () => {
     expect(canMoveFolder(folders, "c", undefined)).toEqual({ ok: true, newDepth: 0 });
+  });
+
+  it("allows creating folders down to the depth limit", () => {
+    expect(canCreateFolderUnder(undefined)).toEqual({ ok: true, newDepth: 0 });
+    expect(canCreateFolderUnder({ depth: 1 })).toEqual({ ok: true, newDepth: 2 });
+    expect(canCreateFolderUnder({ depth: 2 }).ok).toBe(false);
+  });
+
+  it("builds a breadcrumb path", () => {
+    expect(folderPath(folders, "c")).toEqual(["A", "B", "C"]);
+    expect(folderPath(folders, "missing")).toEqual([]);
+  });
+
+  it("flattens a tree depth-first", () => {
+    expect(flattenFolderTree(buildFolderTree(folders)).map((f) => f._id)).toEqual(["a", "b", "c", "d"]);
   });
 });
