@@ -119,6 +119,9 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 - **Thumbnails:** cached in Convex storage, so cards survive deleted or private videos.
 - **Chapters:** chapters parsed from the description are stored as `bookmarks` with `source: "chapter"`. Tapping one seeks the embedded player.
 - **Player:** the YouTube IFrame API inside `react-native-webview`, loaded from base URL `https://com.markmccoid.laabs-video-vault`. YouTube rejects WebView embeds without an https Referer (errors 152/153), so don't remove the base URL. Videos whose owners block embedding (errors 101/150) show an "Open in YouTube" card. AirPlay is enabled on the player (test on a real device); Chromecast isn't possible in an iOS web embed, so "Open in YouTube" covers casting.
+- **Share extension:** native Swift target added with `@bacons/apple-targets` (the `ios/` folder is generated, so no hand-edited Xcode targets). The card offers Cancel and Save, with a folder picker defaulting to Inbox and a note. It never opens the main app, because Apple doesn't support that from share extensions. It authenticates with a per-device share token (see `docs/adr/0001`). Saves that fail go to the Share Queue in the App Group, which the app sends on foreground. When signed out, it saves nothing. Glossary: `CONTEXT.md`.
+- **Just Added:** a view of videos captured in the last 12 hours (`addedAt`), across all folders. It's not a folder.
+- **Clipboard:** use the native paste button (`ClipboardPasteButton`), never a silent clipboard read, so iOS never shows the "Allow Paste" prompt.
 - **List/grid:** the view mode is a per-device preference in AsyncStorage (`src/lib/viewMode.ts`).
 
 ## Phase plan
@@ -126,7 +129,7 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 0. **Foundation** ✅ monorepo, Convex schema, auth, Expo app. *Remaining: first TestFlight build.*
 1. **Capture & library (iOS)** ✅ paste, metadata, Shorts, Inbox, detail, embedded IFrame player with "Open in YouTube" fallback, list/grid toggle.
 2. **Organization & finding** ✅ Library home, nested folders, tags, multi-select (move/tag/trash), search + filter chips, Trash view. *Remaining: paginate long lists (capped at 200 for now), reorder folders.*
-3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), clipboard detection, Shortcuts.
+3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), Just Added view, clipboard detection, Shortcuts. *Remaining: "Dismiss" / "Clear all" for Just Added; revoke all share tokens on password reset.*
 4. **Timestamp bookmarks**: capture at the current time, seek, search, share `?t=` links.
 5. **Mac desktop**: Tauri v2, three-pane layout, ⌘K, drag & drop, global hotkey.
 6. **Folder export/import**: `.vfolder` file, file-type registration, import summary.

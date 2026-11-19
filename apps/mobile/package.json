@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@bacons/apple-targets": "^5.0.0",
     "@convex-dev/auth": "~0.0.98",
     "@lvv/backend": "*",
     "@lvv/core": "*",

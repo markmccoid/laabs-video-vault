@@ -3,19 +3,21 @@ import { buildFolderTree, type FolderNode } from "@lvv/core";
 import { useQuery } from "convex/react";
 import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AddVideoBar } from "@/components/AddVideoBar";
 import { countLabel, NavRow, RowGroup, SectionHeader } from "@/components/NavRow";
 import { VideoBrowser } from "@/components/VideoBrowser";
 import { api, type Doc, type Id } from "@/lib/api";
 import { useFolderActions } from "@/lib/folderActions";
+import { useJustAdded } from "@/lib/justAdded";
+import { useShareSignOut } from "@/lib/shareBridge";
 import { useTheme } from "@/lib/theme";
 import { useViewMode } from "@/lib/viewMode";
 
 type Shorts = "only" | "hide" | undefined;
 
 export default function Library() {
-  const { signOut } = useAuthActions();
+  const signOut = useSignOut();
   const folderActions = useFolderActions();
   const [searching, setSearching] = useState(false);
   const [text, setText] = useState("");
@@ -51,11 +53,36 @@ export default function Library() {
   );
 }
 
+/** Sign out, first sending (or, after a warning, discarding) the Share Queue. */
+function useSignOut() {
+  const { signOut } = useAuthActions();
+  const share = useShareSignOut();
+  return async () => {
+    const pending = await share.pendingAfterSend();
+    if (pending > 0) {
+      const ok = await new Promise<boolean>((resolve) =>
+        Alert.alert(
+          "Shared videos not added yet",
+          `${pending} video${pending === 1 ? "" : "s"} you shared couldn't be added (are you offline?). Signing out discards ${pending === 1 ? "it" : "them"}.`,
+          [
+            { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+            { text: "Sign Out", style: "destructive", onPress: () => resolve(true) },
+          ],
+        ),
+      );
+      if (!ok) return;
+    }
+    await share.teardown();
+    await signOut();
+  };
+}
+
 // ─── Home ───────────────────────────────────────────────────────────────────
 
 function LibraryHome({ onNewFolder }: { onNewFolder: () => void }) {
   const theme = useTheme();
   const inbox = useQuery(api.videos.listByFolder, {});
+  const justAdded = useJustAdded();
   const folders = useQuery(api.folders.list);
   const folderCounts = useQuery(api.folders.counts);
   const tags = useQuery(api.tags.list);
@@ -98,6 +125,14 @@ function LibraryHome({ onNewFolder }: { onNewFolder: () => void }) {
           detail={inbox ? countLabel(inbox.length) : undefined}
           onPress={() => router.push("/inbox")}
         />
+        {!!justAdded?.length && (
+          <NavRow
+            icon="clock.badge"
+            label="Just Added"
+            detail={countLabel(justAdded.length)}
+            onPress={() => router.push("/just-added")}
+          />
+        )}
       </RowGroup>
 
       <SectionHeader title="Folders" action={{ icon: "folder.badge.plus", label: "New Folder", onPress: onNewFolder }} />

@@ -1,13 +1,14 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
+import type { Auth } from "convex/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 /**
  * Every public function resolves the user here. Functions never accept a
  * userId argument from the client.
  */
-export async function requireUserId(ctx: QueryCtx | MutationCtx): Promise<Id<"users">> {
+export async function requireUserId(ctx: { auth: Auth }): Promise<Id<"users">> {
   const userId = await getAuthUserId(ctx);
   if (!userId) throw new ConvexError("Not signed in");
   return userId;
