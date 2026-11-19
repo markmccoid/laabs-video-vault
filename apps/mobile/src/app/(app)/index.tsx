@@ -5,7 +5,7 @@ import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AddVideoBar } from "@/components/AddVideoBar";
-import { NavRow, RowGroup, SectionHeader } from "@/components/NavRow";
+import { countLabel, NavRow, RowGroup, SectionHeader } from "@/components/NavRow";
 import { VideoBrowser } from "@/components/VideoBrowser";
 import { api, type Doc, type Id } from "@/lib/api";
 import { useFolderActions } from "@/lib/folderActions";
@@ -57,6 +57,7 @@ function LibraryHome({ onNewFolder }: { onNewFolder: () => void }) {
   const theme = useTheme();
   const inbox = useQuery(api.videos.listByFolder, {});
   const folders = useQuery(api.folders.list);
+  const folderCounts = useQuery(api.folders.counts);
   const tags = useQuery(api.tags.list);
   const trash = useQuery(api.videos.listTrash);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -76,6 +77,7 @@ function LibraryHome({ onNewFolder }: { onNewFolder: () => void }) {
         icon="folder"
         label={node.name}
         indent={node.depth}
+        detail={folderCounts ? countLabel(folderCounts[node._id] ?? 0) : undefined}
         onPress={() => router.push(`/folder/${node._id}`)}
         expanded={expanded.has(node._id)}
         onToggle={node.children.length > 0 ? () => toggle(node._id) : undefined}
@@ -137,10 +139,6 @@ function LibraryHome({ onNewFolder }: { onNewFolder: () => void }) {
       </View>
     </ScrollView>
   );
-}
-
-function countLabel(n: number) {
-  return n >= 200 ? "200+" : String(n);
 }
 
 // ─── Search ─────────────────────────────────────────────────────────────────

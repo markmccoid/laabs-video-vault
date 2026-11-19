@@ -37,6 +37,40 @@ export const list = query({
   },
 });
 
+/**
+ * Live (non-trashed) video count per folder, including all nested subfolders.
+ * Each folder's own count is capped at 200, so a total of 200 or more means "200+".
+ * Folders with none are omitted.
+ */
+export const counts = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const folders = await allFolders(ctx, userId);
+    const entries = await Promise.all(
+      folders.map(async (f) => {
+        const videos = await ctx.db
+          .query("videos")
+          .withIndex("by_user_folder", (q) => q.eq("userId", userId).eq("folderId", f._id))
+          .filter((q) => q.eq(q.field("deletedAt"), undefined))
+          .take(200);
+        return [f._id, videos.length] as const;
+      }),
+    );
+    const own = new Map(entries);
+    const parentOf = new Map(folders.map((f) => [f._id, f.parentId]));
+    const totals: Record<string, number> = {};
+    for (const [id, n] of own) {
+      if (n === 0) continue;
+      // Add this folder's videos to itself and every ancestor.
+      for (let cur: Id<"folders"> | undefined = id; cur; cur = parentOf.get(cur)) {
+        totals[cur] = (totals[cur] ?? 0) + n;
+      }
+    }
+    return totals as Record<Id<"folders">, number>;
+  },
+});
+
 export const get = query({
   args: { folderId: v.id("folders") },
   handler: async (ctx, { folderId }) => {

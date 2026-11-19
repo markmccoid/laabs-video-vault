@@ -19,6 +19,11 @@ type Props = {
   tint?: string;
 };
 
+/** Count text for a row; the backend caps counts at 200. */
+export function countLabel(n: number) {
+  return n >= 200 ? "200+" : String(n);
+}
+
 /** A grouped-list row: icon, label, optional count, chevron. Used by the Library and pickers. */
 export function NavRow({
   icon,
