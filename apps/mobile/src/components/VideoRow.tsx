@@ -38,14 +38,27 @@ export function VideoInfo({ video, compact = false }: { video: VideoListItem; co
   );
 }
 
-export function VideoRow({ video }: { video: VideoListItem }) {
+export type VideoItemProps = {
+  video: VideoListItem;
+  /** Defaults to opening the detail screen. */
+  onPress?: () => void;
+  /** In select mode: whether this video is selected. Undefined when not selecting. */
+  selected?: boolean;
+};
+
+export function openVideo(video: VideoListItem) {
+  router.push(`/video/${video._id}`);
+}
+
+export function VideoRow({ video, onPress, selected }: VideoItemProps) {
   const theme = useTheme();
   return (
     <Pressable
-      onPress={() => router.push(`/video/${video._id}`)}
+      onPress={onPress ?? (() => openVideo(video))}
+      accessibilityState={selected === undefined ? undefined : { selected }}
       style={({ pressed }) => [styles.row, { backgroundColor: theme.card, opacity: pressed ? 0.7 : 1 }]}
     >
-      <VideoThumb video={video} style={styles.thumb} />
+      <VideoThumb video={video} style={styles.thumb} selected={selected} />
       <View style={styles.rowInfo}>
         <VideoInfo video={video} />
       </View>

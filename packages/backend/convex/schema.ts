@@ -60,6 +60,7 @@ export default defineSchema({
     .index("by_user_folder", ["userId", "folderId"]) // ordered by _creationTime
     .index("by_user_channel", ["userId", "channelId"])
     .index("by_user_favorite", ["userId", "favorite"])
+    .index("by_user_deleted", ["userId", "deletedAt"]) // Trash: deletedAt set, newest last
     .searchIndex("search", {
       searchField: "searchText",
       filterFields: ["userId", "folderId", "isShort"],
