@@ -1,9 +1,9 @@
-import { buildSearchText, parseYouTubeUrl, thumbnailUrl } from "@lvv/core";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { requireOwnedFolder, requireOwnedTag, requireOwnedVideo, requireOwnedVideos, requireUserId } from "./lib/auth";
+import { captureVideo, type CaptureResult } from "./lib/capture";
 import { rebuildSearchText } from "./lib/search";
 import { attachTag, ensureShortTag, tagsForVideo } from "./lib/tags";
 
@@ -56,16 +56,9 @@ async function purgeTrashBatch(ctx: MutationCtx, userId: Id<"users">): Promise<b
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-export type AddVideoResult =
-  | { status: "added"; videoId: Id<"videos"> }
-  | { status: "restored"; videoId: Id<"videos"> }
-  | { status: "duplicate"; videoId: Id<"videos">; folderId: Id<"folders"> | null };
+export type AddVideoResult = CaptureResult;
 
-/**
- * Add a video from any pasted/shared text. Inserts immediately with
- * placeholder metadata so the card appears instantly, then schedules the
- * YouTube metadata fetch.
- */
+/** Add a video from any pasted/shared text. See lib/capture.ts. */
 export const add = mutation({
   args: {
     input: v.string(),
@@ -74,58 +67,43 @@ export const add = mutation({
   },
   handler: async (ctx, args): Promise<AddVideoResult> => {
     const userId = await requireUserId(ctx);
-    const parsed = parseYouTubeUrl(args.input);
-    if (!parsed) throw new ConvexError("That doesn't look like a YouTube link.");
+    return await captureVideo(ctx, userId, args);
+  },
+});
 
-    if (args.folderId) {
-      const folder = await ctx.db.get(args.folderId);
-      if (!folder || folder.userId !== userId) throw new ConvexError("Folder not found");
-    }
+/**
+ * Save an item from the Share Queue: a share-sheet save that couldn't reach
+ * the server, sent later by the main app. Same behavior as POST /share.
+ */
+export const saveShared = mutation({
+  args: {
+    input: v.string(),
+    folderId: v.optional(v.id("folders")),
+    notes: v.optional(v.string()),
+    update: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<CaptureResult> => {
+    const userId = await requireUserId(ctx);
+    return await captureVideo(ctx, userId, { ...args, missingFolderToInbox: true });
+  },
+});
 
-    const existing = await ctx.db
+/**
+ * Just Added: videos captured since `since`, in any folder, newest first.
+ * The client passes `since` (justAddedSince from @lvv/core) because queries
+ * can't read the clock.
+ */
+export const listJustAdded = query({
+  args: { since: v.number() },
+  handler: async (ctx, { since }) => {
+    const userId = await requireUserId(ctx);
+    const videos = await ctx.db
       .query("videos")
-      .withIndex("by_user_youtubeId", (q) => q.eq("userId", userId).eq("youtubeId", parsed.videoId))
-      .unique();
-
-    if (existing) {
-      if (existing.deletedAt !== undefined) {
-        await ctx.db.patch(existing._id, { deletedAt: undefined, folderId: args.folderId });
-        return { status: "restored", videoId: existing._id };
-      }
-      return { status: "duplicate", videoId: existing._id, folderId: existing.folderId ?? null };
-    }
-
-    const notes = args.notes?.trim() ?? "";
-    const base = {
-      title: "",
-      channelTitle: "",
-      description: "",
-      notes,
-    };
-    const videoId = await ctx.db.insert("videos", {
-      userId,
-      youtubeId: parsed.videoId,
-      ...base,
-      thumbUrl: thumbnailUrl(parsed.videoId),
-      isShort: parsed.isShortUrl,
-      folderId: args.folderId,
-      favorite: false,
-      metadataState: "pending",
-      searchText: buildSearchText({ ...base, tagNames: [] }),
-    });
-
-    if (parsed.isShortUrl) {
-      await attachTag(ctx, userId, videoId, await ensureShortTag(ctx, userId));
-      await rebuildSearchText(ctx, videoId);
-    }
-
-    await ctx.scheduler.runAfter(0, internal.youtube.fetchMetadata, {
-      videoId,
-      youtubeId: parsed.videoId,
-      knownShort: parsed.isShortUrl,
-    });
-
-    return { status: "added", videoId };
+      .withIndex("by_user_addedAt", (q) => q.eq("userId", userId).gte("addedAt", since))
+      .order("desc")
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .take(LIST_LIMIT);
+    return await Promise.all(videos.map((vid) => withThumb(ctx, vid)));
   },
 });
 

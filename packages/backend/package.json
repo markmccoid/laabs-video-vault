@@ -6,7 +6,8 @@
     "dev": "convex dev",
     "deploy": "convex deploy",
     "typecheck": "tsc --noEmit -p convex",
-    "auth:keys": "node scripts/setup-auth-keys.mjs"
+    "auth:keys": "node scripts/setup-auth-keys.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@auth/core": "0.41.1",
@@ -15,8 +16,11 @@
     "convex": "^1.50.0"
   },
   "devDependencies": {
-    "typescript": "~6.0.3",
+    "@edge-runtime/vm": "^5.0.0",
     "@types/node": "^24",
-    "jose": "^5.2.2"
+    "convex-test": "^0.0.73",
+    "jose": "^5.2.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
   }
 }

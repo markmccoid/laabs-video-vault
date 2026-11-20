@@ -50,6 +50,8 @@ export default defineSchema({
     notes: v.string(),
     favorite: v.boolean(),
     lastOpenedAt: v.optional(v.number()),
+    /** When the video was last captured (added, or restored from Trash by capturing it again). Drives Just Added. */
+    addedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()), // soft delete (Trash)
     metadataState,
     metadataError: v.optional(v.string()),
@@ -61,6 +63,7 @@ export default defineSchema({
     .index("by_user_channel", ["userId", "channelId"])
     .index("by_user_favorite", ["userId", "favorite"])
     .index("by_user_deleted", ["userId", "deletedAt"]) // Trash: deletedAt set, newest last
+    .index("by_user_addedAt", ["userId", "addedAt"]) // Just Added
     .searchIndex("search", {
       searchField: "searchText",
       filterFields: ["userId", "folderId", "isShort"],
@@ -74,6 +77,18 @@ export default defineSchema({
   })
     .index("by_video", ["videoId"])
     .index("by_user_tag", ["userId", "tagId"]),
+
+  /**
+   * Per-device tokens the iOS Share Extension uses to call /share (docs/adr/0001).
+   * Only a SHA-256 hash is stored; the app holds the token in a shared Keychain item.
+   */
+  shareTokens: defineTable({
+    userId: v.id("users"),
+    tokenHash: v.string(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_hash", ["tokenHash"])
+    .index("by_user", ["userId"]),
 
   bookmarks: defineTable({
     userId: v.id("users"),

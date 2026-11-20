@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "icon": "./assets/app.icon",
       "supportsTablet": true,
       "bundleIdentifier": "com.markmccoid.laabs-video-vault",
       "config": {
@@ -35,10 +36,38 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-image"
+      "expo-image",
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.markmccoid.laabs-video-vault.share",
+                  "targetName": "ShareExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.markmccoid.laabs-video-vault"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "d91dc07b-981f-4234-a586-fdceb2fc947f"
+      }
     }
   }
 }

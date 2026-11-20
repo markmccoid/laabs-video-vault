@@ -8,16 +8,16 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": { "simulator": true },
-      "env": { "EXPO_PUBLIC_CONVEX_URL": "SET_ME_dev_convex_url" }
+      "env": { "EXPO_PUBLIC_CONVEX_URL": "https://fine-bass-237.convex.cloud" }
     },
     "preview": {
       "distribution": "store",
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_CONVEX_URL": "SET_ME_dev_convex_url" }
+      "env": { "EXPO_PUBLIC_CONVEX_URL": "https://fine-bass-237.convex.cloud" }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_CONVEX_URL": "SET_ME_prod_convex_url" }
+      "env": { "EXPO_PUBLIC_CONVEX_URL": "https://acoustic-rhinoceros-246.convex.cloud" }
     }
   },
   "submit": {

@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { AddVideoBar } from "@/components/AddVideoBar";
-import { NavRow, RowGroup } from "@/components/NavRow";
+import { countLabel, NavRow, RowGroup } from "@/components/NavRow";
 import { VideoListScreen } from "@/components/VideoListScreen";
 import { api, type Id } from "@/lib/api";
 import { useFolderActions } from "@/lib/folderActions";
@@ -14,6 +14,7 @@ export default function FolderScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: Id<"folders"> }>();
   const folders = useQuery(api.folders.list);
+  const folderCounts = useQuery(api.folders.counts);
   const videos = useQuery(api.videos.listByFolder, { folderId: id });
   const actions = useFolderActions();
 
@@ -40,6 +41,7 @@ export default function FolderScreen() {
                 key={child._id}
                 icon="folder"
                 label={child.name}
+                detail={folderCounts ? countLabel(folderCounts[child._id] ?? 0) : undefined}
                 onPress={() => router.push(`/folder/${child._id}`)}
               />
             ))}
