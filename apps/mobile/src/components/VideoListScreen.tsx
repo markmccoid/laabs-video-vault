@@ -6,7 +6,7 @@ import type { VideoListItem } from "@/components/VideoRow";
 import { api, type Id } from "@/lib/api";
 import { attempt, confirmDestructive } from "@/lib/prompt";
 import { encodeIds, useSelection, type Selection } from "@/lib/selection";
-import { fonts } from "@/lib/theme";
+import { fonts, useTheme } from "@/lib/theme";
 
 export type MenuItem = {
   label: string;
@@ -117,6 +117,7 @@ export function SelectionToolbars({
   allIds: Id<"videos">[];
   mode?: "library" | "trash";
 }) {
+  const theme = useTheme();
   const trashMany = useMutation(api.videos.trashMany);
   const restoreMany = useMutation(api.videos.restoreMany);
   const deleteForever = useMutation(api.videos.deleteForever);
@@ -151,7 +152,7 @@ export function SelectionToolbars({
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button variant="done" onPress={selection.finish}>
+        <Stack.Toolbar.Button variant="done" tintColor={theme.accent} onPress={selection.finish}>
           Done
         </Stack.Toolbar.Button>
       </Stack.Toolbar>

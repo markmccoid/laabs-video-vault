@@ -70,62 +70,66 @@ export const VideoRow = memo(function VideoRow({
   const tags = video.tagNames;
   const meta = [video.channelTitle, path].filter(Boolean).join(" · ");
 
+  // The … menu is a sibling of the pressable area: a SwiftUI menu inside an
+  // RN Pressable never gets the touch.
   return (
-    <Pressable
-      onPress={onPress ?? (() => openVideo(video))}
-      accessibilityRole="button"
-      accessibilityState={selecting ? { selected } : undefined}
-      style={({ pressed }) => [styles.row, { opacity: pressed ? 0.75 : 1 }]}
-    >
-      {selecting && (
-        <View
-          style={[
-            styles.check,
-            selected ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.dashed },
-          ]}
-        >
-          {selected && <SymbolView name="checkmark" size={12} weight="heavy" tintColor={theme.accentText} />}
+    <View style={styles.row}>
+      <Pressable
+        onPress={onPress ?? (() => openVideo(video))}
+        accessibilityRole="button"
+        accessibilityState={selecting ? { selected } : undefined}
+        style={({ pressed }) => [styles.press, { opacity: pressed ? 0.75 : 1 }]}
+      >
+        {selecting && (
+          <View
+            style={[
+              styles.check,
+              selected ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.dashed },
+            ]}
+          >
+            {selected && <SymbolView name="checkmark" size={12} weight="heavy" tintColor={theme.accentText} />}
+          </View>
+        )}
+        <VideoThumb video={video} style={styles.thumb} />
+        <View style={styles.info}>
+          {pending ? (
+            <View style={styles.pending}>
+              <ActivityIndicator size="small" />
+              <Text style={[type.meta, { color: theme.muted }]}>Fetching video details…</Text>
+            </View>
+          ) : (
+            <Text style={[type.rowTitle, { color: theme.text }]} numberOfLines={2}>
+              <Highlighted text={video.title || video.youtubeId} query={query} color={theme.text} />
+            </Text>
+          )}
+          {!!meta && (
+            <Text style={[type.meta, { color: theme.muted }]} numberOfLines={1}>
+              {meta}
+            </Text>
+          )}
+          {!!descSnippet && (
+            <Text style={[type.meta, { color: theme.muted }]} numberOfLines={2}>
+              <Highlighted text={descSnippet} query={query} color={theme.text} />
+            </Text>
+          )}
+          {video.metadataState === "unavailable" && (
+            <Text style={[type.metaStrong, { color: theme.danger }]}>Unavailable on YouTube</Text>
+          )}
+          {video.metadataState === "failed" && (
+            <Text style={[type.metaStrong, { color: theme.danger }]}>Couldn't load details</Text>
+          )}
+          {tags.length > 0 && (
+            <View style={styles.tags}>
+              {tags.slice(0, 3).map((t) => (
+                <Chip key={t} label={t} />
+              ))}
+              {tags.length > 3 && <Chip label={`+${tags.length - 3}`} />}
+            </View>
+          )}
         </View>
-      )}
-      <VideoThumb video={video} style={styles.thumb} />
-      <View style={styles.info}>
-        {pending ? (
-          <View style={styles.pending}>
-            <ActivityIndicator size="small" />
-            <Text style={[type.meta, { color: theme.muted }]}>Fetching video details…</Text>
-          </View>
-        ) : (
-          <Text style={[type.rowTitle, { color: theme.text }]} numberOfLines={2}>
-            <Highlighted text={video.title || video.youtubeId} query={query} color={theme.text} />
-          </Text>
-        )}
-        {!!meta && (
-          <Text style={[type.meta, { color: theme.muted }]} numberOfLines={1}>
-            {meta}
-          </Text>
-        )}
-        {!!descSnippet && (
-          <Text style={[type.meta, { color: theme.muted }]} numberOfLines={2}>
-            <Highlighted text={descSnippet} query={query} color={theme.text} />
-          </Text>
-        )}
-        {video.metadataState === "unavailable" && (
-          <Text style={[type.metaStrong, { color: theme.danger }]}>Unavailable on YouTube</Text>
-        )}
-        {video.metadataState === "failed" && (
-          <Text style={[type.metaStrong, { color: theme.danger }]}>Couldn't load details</Text>
-        )}
-        {tags.length > 0 && (
-          <View style={styles.tags}>
-            {tags.slice(0, 3).map((t) => (
-              <Chip key={t} label={t} />
-            ))}
-            {tags.length > 3 && <Chip label={`+${tags.length - 3}`} />}
-          </View>
-        )}
-      </View>
+      </Pressable>
       {menu && !selecting && <VideoMenu video={video} onStartSelect={onStartSelect} />}
-    </Pressable>
+    </View>
   );
 });
 
@@ -151,7 +155,8 @@ function VideoMenu({ video, onStartSelect }: { video: VideoListItem; onStartSele
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingHorizontal: GUTTER, paddingVertical: 8 },
+  row: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: GUTTER, paddingVertical: 8 },
+  press: { flex: 1, flexDirection: "row", alignItems: "flex-start", gap: 12 },
   check: {
     width: 24,
     height: 24,
@@ -165,5 +170,5 @@ const styles = StyleSheet.create({
   info: { flex: 1, gap: 4, paddingTop: 2 },
   pending: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 40 },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 2 },
-  menuHost: { marginRight: -8, marginTop: -6 },
+  menuHost: { marginRight: -8, marginTop: -6, marginLeft: 4 },
 });

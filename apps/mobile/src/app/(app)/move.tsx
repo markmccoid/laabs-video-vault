@@ -2,14 +2,13 @@ import { canMoveFolder } from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator } from "react-native";
 import { FolderPicker, type PickerValue } from "@/components/FolderPicker";
-import { SheetHeader } from "@/components/ui";
+import { SheetHeader, SheetScroll } from "@/components/ui";
 import { api, type Id } from "@/lib/api";
 import { useFolders } from "@/lib/folders";
 import { attempt } from "@/lib/prompt";
 import { decodeIds } from "@/lib/selection";
-import { useTheme } from "@/lib/theme";
 
 /**
  * Move to folder (2c). Moves either videos (`videoIds`, comma-separated) or
@@ -17,7 +16,6 @@ import { useTheme } from "@/lib/theme";
  * create a cycle or nest too deep.
  */
 export default function MoveSheet() {
-  const theme = useTheme();
   const params = useLocalSearchParams<{ videoIds?: string; folderId?: Id<"folders"> }>();
   const videoIds = decodeIds<Id<"videos">>(params.videoIds);
   const movingFolderId = params.folderId;
@@ -55,25 +53,27 @@ export default function MoveSheet() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <SheetHeader
-        title={movingFolder ? "Move folder" : "Move to folder"}
-        subtitle={subtitle}
-        onClose={() => router.back()}
-        action={{ label: "Move", onPress: () => void move(), disabled: !canMove }}
-      />
-      <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <FolderPicker
-          data={data}
-          value={picked}
-          onChange={setPicked}
-          current={current}
-          rootLabel={movingFolder ? "Top level" : "Inbox"}
-          rootIcon={movingFolder ? "square.stack.3d.up" : "tray"}
-          isDisabled={movingFolderId ? (id) => !canMoveFolder(folders, movingFolderId, id).ok : undefined}
-          allowCreate={!movingFolder}
+    <SheetScroll
+      header={
+        <SheetHeader
+          title={movingFolder ? "Move folder" : "Move to folder"}
+          subtitle={subtitle}
+          onClose={() => router.back()}
+          action={{ label: "Move", onPress: () => void move(), disabled: !canMove }}
         />
-      </ScrollView>
-    </View>
+      }
+      contentStyle={{ paddingTop: 8, paddingBottom: 40 }}
+    >
+      <FolderPicker
+        data={data}
+        value={picked}
+        onChange={setPicked}
+        current={current}
+        rootLabel={movingFolder ? "Top level" : "Inbox"}
+        rootIcon={movingFolder ? "square.stack.3d.up" : "tray"}
+        isDisabled={movingFolderId ? (id) => !canMoveFolder(folders, movingFolderId, id).ok : undefined}
+        allowCreate={!movingFolder}
+      />
+    </SheetScroll>
   );
 }

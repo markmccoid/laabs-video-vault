@@ -2,8 +2,8 @@ import { canCreateFolderUnder, flattenFolderTree, MAX_FOLDER_DEPTH } from "@lvv/
 import { useMutation } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Chip, DepthDots, GroupLabel, SheetHeader } from "@/components/ui";
+import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Chip, DepthDots, GroupLabel, SheetHeader, SheetScroll } from "@/components/ui";
 import { api, type Id } from "@/lib/api";
 import { useFolders } from "@/lib/folders";
 import { attempt } from "@/lib/prompt";
@@ -30,49 +30,57 @@ export default function NewFolderSheet() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <SheetHeader
-        title={params.parentId ? "New subfolder" : "New folder"}
-        onClose={() => router.back()}
-        action={{ label: "Create", onPress: () => void submit(), disabled: !ready }}
-      />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <TextInput
-          autoFocus
-          value={name}
-          onChangeText={setName}
-          onSubmitEditing={() => void submit()}
-          returnKeyType="done"
-          placeholder="Folder name"
-          placeholderTextColor={theme.muted}
-          accessibilityLabel="Folder name"
-          style={[styles.name, { borderColor: theme.accentRing, color: theme.text, backgroundColor: theme.bg }]}
+    <SheetScroll
+      header={
+        <SheetHeader
+          title={params.parentId ? "New subfolder" : "New folder"}
+          onClose={() => router.back()}
+          action={{ label: "Create", onPress: () => void submit(), disabled: !ready }}
         />
-        <View style={styles.insideRow}>
-          <GroupLabel>Inside</GroupLabel>
-          <View style={styles.level}>
-            <DepthDots level={level} />
-            <Text style={[type.metaStrong, { color: theme.muted }]}>
-              Level {level} of {MAX_FOLDER_DEPTH}
-            </Text>
-          </View>
+      }
+      contentStyle={styles.content}
+    >
+      <TextInput
+        autoFocus
+        value={name}
+        onChangeText={setName}
+        onSubmitEditing={() => void submit()}
+        returnKeyType="done"
+        placeholder="Folder name"
+        placeholderTextColor={theme.muted}
+        accessibilityLabel="Folder name"
+        style={[styles.name, { borderColor: theme.accentRing, color: theme.text, backgroundColor: theme.bg }]}
+      />
+      <View style={styles.insideRow}>
+        <GroupLabel>Inside</GroupLabel>
+        <View style={styles.level}>
+          <DepthDots level={level} />
+          <Text style={[type.metaStrong, { color: theme.muted }]}>
+            Level {level} of {MAX_FOLDER_DEPTH}
+          </Text>
         </View>
-        <View style={styles.parents}>
-          <Chip label="Library" icon="books.vertical.fill" size="md" variant={!parentId ? "accent" : "surface"} onPress={() => setParentId(undefined)} />
-          {parents.map((f) => (
-            <Chip
-              key={f._id}
-              label={data.pathFor(f._id)}
-              icon="folder.fill"
-              size="md"
-              variant={parentId === f._id ? "accent" : "surface"}
-              onPress={() => setParentId(f._id)}
-            />
-          ))}
-        </View>
-        <Text style={[type.meta, styles.foot, { color: theme.muted }]}>Folders nest up to three levels deep.</Text>
-      </ScrollView>
-    </View>
+      </View>
+      <View style={styles.parents}>
+        <Chip
+          label="Library"
+          icon="books.vertical.fill"
+          size="md"
+          variant={!parentId ? "accent" : "surface"}
+          onPress={() => setParentId(undefined)}
+        />
+        {parents.map((f) => (
+          <Chip
+            key={f._id}
+            label={data.pathFor(f._id)}
+            icon="folder.fill"
+            size="md"
+            variant={parentId === f._id ? "accent" : "surface"}
+            onPress={() => setParentId(f._id)}
+          />
+        ))}
+      </View>
+      <Text style={[type.meta, styles.foot, { color: theme.muted }]}>Folders nest up to three levels deep.</Text>
+    </SheetScroll>
   );
 }
 

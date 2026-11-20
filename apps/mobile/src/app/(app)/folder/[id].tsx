@@ -74,7 +74,7 @@ export default function FolderScreen() {
       videos={videos}
       header={header}
       emptyTitle="No videos here yet"
-      emptyBody="Tap + to add one, or move videos here from the Inbox."
+      emptyBody="Add one from the … menu, or move videos here from the Inbox."
       menuItems={
         folder
           ? [

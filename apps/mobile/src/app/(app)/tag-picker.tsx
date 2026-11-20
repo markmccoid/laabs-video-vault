@@ -3,8 +3,8 @@ import { useMutation, useQuery } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Chip, GroupLabel, SheetHeader } from "@/components/ui";
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native";
+import { Chip, GroupLabel, SheetHeader, SheetScroll } from "@/components/ui";
 import { api, type Id } from "@/lib/api";
 import { attempt } from "@/lib/prompt";
 import { decodeIds } from "@/lib/selection";
@@ -25,8 +25,16 @@ export default function TagPicker() {
   const createTag = useMutation(api.tags.create);
   const [draft, setDraft] = useState("");
 
-  const subtitle = videoIds.length === 1 ? (single ? `“${single.title || "Video"}”` : undefined) : `${videoIds.length} videos`;
-  const header = <SheetHeader title="Tags" subtitle={subtitle} onClose={() => router.back()} action={{ label: "Done", onPress: () => router.back() }} />;
+  const subtitle =
+    videoIds.length === 1 ? (single ? `“${single.title || "Video"}”` : undefined) : `${videoIds.length} videos`;
+  const header = (
+    <SheetHeader
+      title="Tags"
+      subtitle={subtitle}
+      onClose={() => router.back()}
+      action={{ label: "Done", onPress: () => router.back() }}
+    />
+  );
 
   if (!tags || !current) {
     return (
@@ -67,58 +75,61 @@ export default function TagPicker() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      {header}
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {shared.length > 0 ? (
+    <SheetScroll header={header} contentStyle={styles.content}>
+      {shared.length > 0 ? (
+        <View style={styles.wrap}>
+          {shared.map((t) => (
+            <Chip
+              key={t._id}
+              label={t.name}
+              variant="sage"
+              size="md"
+              onRemove={t.system ? undefined : () => remove(t._id)}
+            />
+          ))}
+        </View>
+      ) : (
+        <Text style={[type.body, { color: theme.muted, paddingHorizontal: GUTTER }]}>
+          {videoIds.length === 1 ? "No tags yet." : "These videos share no tags yet."}
+        </Text>
+      )}
+
+      <View style={[styles.field, { backgroundColor: theme.surface }]}>
+        <SymbolView name="magnifyingglass" size={16} tintColor={theme.muted} />
+        <TextInput
+          style={[styles.input, { color: theme.text }]}
+          placeholder="Find or create a tag"
+          placeholderTextColor={theme.muted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="done"
+          submitBehavior="submit"
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={() => void submit()}
+        />
+      </View>
+
+      {canCreate && (
+        <View style={styles.wrap}>
+          <Chip label={`Create “${q}”`} icon="plus" variant="accent" size="md" onPress={() => void submit()} />
+        </View>
+      )}
+      {draft.trim() !== "" && !check.ok && !exact && (
+        <Text style={[type.meta, { color: theme.danger, paddingHorizontal: GUTTER }]}>{check.reason}</Text>
+      )}
+
+      {suggestions.length > 0 && (
+        <>
+          <GroupLabel>{q ? "Matching tags" : "Your tags"}</GroupLabel>
           <View style={styles.wrap}>
-            {shared.map((t) => (
-              <Chip key={t._id} label={t.name} variant="sage" size="md" onRemove={t.system ? undefined : () => remove(t._id)} />
+            {suggestions.map((t) => (
+              <Chip key={t._id} label={t.name} icon="plus" size="md" onPress={() => add(t._id)} />
             ))}
           </View>
-        ) : (
-          <Text style={[type.body, { color: theme.muted, paddingHorizontal: GUTTER }]}>
-            {videoIds.length === 1 ? "No tags yet." : "These videos share no tags yet."}
-          </Text>
-        )}
-
-        <View style={[styles.field, { backgroundColor: theme.surface }]}>
-          <SymbolView name="magnifyingglass" size={16} tintColor={theme.muted} />
-          <TextInput
-            style={[styles.input, { color: theme.text }]}
-            placeholder="Find or create a tag"
-            placeholderTextColor={theme.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="done"
-            submitBehavior="submit"
-            value={draft}
-            onChangeText={setDraft}
-            onSubmitEditing={() => void submit()}
-          />
-        </View>
-
-        {canCreate && (
-          <View style={styles.wrap}>
-            <Chip label={`Create “${q}”`} icon="plus" variant="accent" size="md" onPress={() => void submit()} />
-          </View>
-        )}
-        {draft.trim() !== "" && !check.ok && !exact && (
-          <Text style={[type.meta, { color: theme.danger, paddingHorizontal: GUTTER }]}>{check.reason}</Text>
-        )}
-
-        {suggestions.length > 0 && (
-          <>
-            <GroupLabel>{q ? "Matching tags" : "Your tags"}</GroupLabel>
-            <View style={styles.wrap}>
-              {suggestions.map((t) => (
-                <Chip key={t._id} label={t.name} icon="plus" size="md" onPress={() => add(t._id)} />
-              ))}
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </View>
+        </>
+      )}
+    </SheetScroll>
   );
 }
 

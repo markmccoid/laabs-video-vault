@@ -3,7 +3,7 @@ import { pickerStyle, tag, tint } from "@expo/ui/swift-ui/modifiers";
 import { MAX_FOLDER_DEPTH } from "@lvv/core";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { fonts, GUTTER, radius, type, useTheme } from "@/lib/theme";
 
 export type SymbolName = SymbolViewProps["name"];
@@ -160,6 +160,25 @@ export function SheetHeader({
         </Text>
       )}
     </View>
+  );
+}
+
+/**
+ * Sheet body. react-native-screens form sheets expect a ScrollView as the
+ * screen's first child, so the header rides inside it as a sticky item.
+ */
+export function SheetScroll({ header, children, contentStyle }: { header: ReactNode; children: ReactNode; contentStyle?: StyleProp<ViewStyle> }) {
+  const theme = useTheme();
+  return (
+    <ScrollView
+      style={{ backgroundColor: theme.bg }}
+      stickyHeaderIndices={[0]}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: 60 }}
+    >
+      <View style={{ backgroundColor: theme.bg }}>{header}</View>
+      <View style={contentStyle}>{children}</View>
+    </ScrollView>
   );
 }
 

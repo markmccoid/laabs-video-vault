@@ -5,9 +5,9 @@ import { ClipboardPasteButton } from "expo-clipboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { FolderPicker, type PickerValue } from "@/components/FolderPicker";
-import { Chip, GroupLabel, SheetHeader } from "@/components/ui";
+import { Chip, GroupLabel, SheetHeader, SheetScroll } from "@/components/ui";
 import { VideoThumb } from "@/components/VideoThumb";
 import { api, type Id } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
@@ -75,7 +75,10 @@ export default function AddVideoSheet() {
       }
       router.back();
       if (result.status === "duplicate") {
-        Alert.alert("Already saved", "This video was already in your library. Its tags were updated; its folder wasn't changed.");
+        Alert.alert(
+          "Already saved",
+          "This video was already in your library. Its tags were updated; its folder wasn't changed.",
+        );
       }
     } catch (err) {
       Alert.alert("Couldn't add video", errorMessage(err));
@@ -89,77 +92,91 @@ export default function AddVideoSheet() {
     .slice(0, 12);
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <SheetHeader
-        title="Add video"
-        onClose={() => router.back()}
-        action={{ label: saving ? "Saving…" : "Save", onPress: () => void save(), disabled: preview?.status !== "ok" || saving }}
-      />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={[styles.linkField, { backgroundColor: theme.surface }]}>
-          <SymbolView name="link" size={16} tintColor={theme.muted} />
-          <TextInput
-            autoFocus
-            value={link}
-            onChangeText={setLink}
-            placeholder="YouTube link"
-            placeholderTextColor={theme.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            returnKeyType="done"
-            style={[styles.input, { color: theme.text }]}
+    <SheetScroll
+      header={
+        <SheetHeader
+          title="Add video"
+          onClose={() => router.back()}
+          action={{
+            label: saving ? "Saving…" : "Save",
+            onPress: () => void save(),
+            disabled: preview?.status !== "ok" || saving,
+          }}
+        />
+      }
+      contentStyle={styles.content}
+    >
+      <View style={[styles.linkField, { backgroundColor: theme.surface }]}>
+        <SymbolView name="link" size={16} tintColor={theme.muted} />
+        <TextInput
+          autoFocus
+          value={link}
+          onChangeText={setLink}
+          placeholder="YouTube link"
+          placeholderTextColor={theme.muted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          returnKeyType="done"
+          style={[styles.input, { color: theme.text }]}
+        />
+        <ClipboardPasteButton
+          onPress={(e) => e.type === "text" && setLink(e.text)}
+          acceptedContentTypes={["plain-text", "url"]}
+          displayMode="iconAndLabel"
+          cornerStyle="capsule"
+          backgroundColor={theme.accent}
+          foregroundColor={theme.accentText}
+          style={styles.paste}
+        />
+      </View>
+      {!!link.trim() && !parsed && (
+        <Text style={[type.meta, { color: theme.danger, paddingHorizontal: GUTTER + 4 }]}>
+          That isn't a YouTube link.
+        </Text>
+      )}
+
+      <PreviewCard preview={preview} />
+
+      <GroupLabel>Save to</GroupLabel>
+      {data.folders && <FolderPicker data={data} value={folder} onChange={setFolder} />}
+
+      <GroupLabel>Tags</GroupLabel>
+      <View style={styles.wrap}>
+        {tags.map((t) => (
+          <Chip key={t} label={t} variant="sage" size="md" onRemove={() => setTags(tags.filter((x) => x !== t))} />
+        ))}
+      </View>
+      <View style={[styles.linkField, { backgroundColor: theme.surface, marginTop: tags.length ? 10 : 0 }]}>
+        <SymbolView name="tag" size={16} tintColor={theme.muted} />
+        <TextInput
+          value={tagDraft}
+          onChangeText={setTagDraft}
+          onSubmitEditing={() => addTag(tagDraft)}
+          submitBehavior="submit"
+          placeholder="Find or create a tag"
+          placeholderTextColor={theme.muted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="done"
+          style={[styles.input, { color: theme.text }]}
+        />
+      </View>
+      <View style={[styles.wrap, { marginTop: 10 }]}>
+        {!!tagDraft.trim() && !(allTags ?? []).some((t) => t.nameLower === tagKey(tagDraft.trim())) && (
+          <Chip
+            label={`Create “${tagKey(tagDraft.trim())}”`}
+            icon="plus"
+            variant="accent"
+            size="md"
+            onPress={() => addTag(tagDraft)}
           />
-          <ClipboardPasteButton
-            onPress={(e) => e.type === "text" && setLink(e.text)}
-            acceptedContentTypes={["plain-text", "url"]}
-            displayMode="iconAndLabel"
-            cornerStyle="capsule"
-            backgroundColor={theme.accent}
-            foregroundColor={theme.accentText}
-            style={styles.paste}
-          />
-        </View>
-        {!!link.trim() && !parsed && (
-          <Text style={[type.meta, { color: theme.danger, paddingHorizontal: GUTTER + 4 }]}>That isn't a YouTube link.</Text>
         )}
-
-        <PreviewCard preview={preview} />
-
-        <GroupLabel>Save to</GroupLabel>
-        {data.folders && <FolderPicker data={data} value={folder} onChange={setFolder} />}
-
-        <GroupLabel>Tags</GroupLabel>
-        <View style={styles.wrap}>
-          {tags.map((t) => (
-            <Chip key={t} label={t} variant="sage" size="md" onRemove={() => setTags(tags.filter((x) => x !== t))} />
-          ))}
-        </View>
-        <View style={[styles.linkField, { backgroundColor: theme.surface, marginTop: tags.length ? 10 : 0 }]}>
-          <SymbolView name="tag" size={16} tintColor={theme.muted} />
-          <TextInput
-            value={tagDraft}
-            onChangeText={setTagDraft}
-            onSubmitEditing={() => addTag(tagDraft)}
-            submitBehavior="submit"
-            placeholder="Find or create a tag"
-            placeholderTextColor={theme.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="done"
-            style={[styles.input, { color: theme.text }]}
-          />
-        </View>
-        <View style={[styles.wrap, { marginTop: 10 }]}>
-          {!!tagDraft.trim() && !(allTags ?? []).some((t) => t.nameLower === tagKey(tagDraft.trim())) && (
-            <Chip label={`Create “${tagKey(tagDraft.trim())}”`} icon="plus" variant="accent" size="md" onPress={() => addTag(tagDraft)} />
-          )}
-          {suggestions.map((t) => (
-            <Chip key={t._id} label={t.name} icon="plus" size="md" onPress={() => addTag(t.name)} />
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+        {suggestions.map((t) => (
+          <Chip key={t._id} label={t.name} icon="plus" size="md" onPress={() => addTag(t.name)} />
+        ))}
+      </View>
+    </SheetScroll>
   );
 }
 
@@ -179,7 +196,9 @@ function PreviewCard({ preview }: { preview: Preview }) {
       <View style={[styles.preview, { backgroundColor: theme.surface }]}>
         <SymbolView name="exclamationmark.triangle" size={18} tintColor={theme.danger} />
         <Text style={[type.body, { color: theme.text, flex: 1 }]}>
-          {preview.status === "unavailable" ? "This video is private, deleted, or unavailable." : "Couldn't fetch the details. Check your connection."}
+          {preview.status === "unavailable"
+            ? "This video is private, deleted, or unavailable."
+            : "Couldn't fetch the details. Check your connection."}
         </Text>
       </View>
     );
@@ -187,7 +206,11 @@ function PreviewCard({ preview }: { preview: Preview }) {
   return (
     <View style={[styles.preview, { backgroundColor: theme.surface }]}>
       <VideoThumb
-        video={{ thumbnail: preview.thumbUrl ?? `https://i.ytimg.com/vi/${preview.youtubeId}/hqdefault.jpg`, durationSec: preview.durationSec, isShort: false }}
+        video={{
+          thumbnail: preview.thumbUrl ?? `https://i.ytimg.com/vi/${preview.youtubeId}/hqdefault.jpg`,
+          durationSec: preview.durationSec,
+          isShort: false,
+        }}
         style={{ width: 120 }}
         playDisc={false}
       />
