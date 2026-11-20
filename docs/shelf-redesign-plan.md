@@ -34,6 +34,8 @@ Branch: `shelf-redesign`. Goal: restyle the mobile app with the Organic tokens a
 
 ## Phases
 
+Status (2026-11-19): Phases 1–6 built on `shelf-redesign` and checked on the iPhone 17 simulator. The share extension restyle compiles but wasn't exercised from the YouTube app.
+
 ### Phase 1 — Foundation
 - `npx expo install @expo/ui expo-font @expo-google-fonts/caprasimo @expo-google-fonts/figtree`; add the `expo-font` config plugin with the TTFs; dev-client rebuild.
 - Rewrite `theme.ts`: Organic scales (`accent`, `sage`, `neutral`), semantic tokens (`bg`, `surface`, `text`, `muted`, `divider`, `accentText`…), `fonts`, `radius`, `space`; dark palette; `ThemePreferenceProvider` (System/Light/Dark, AsyncStorage) feeding `useTheme()` and the stack's `contentStyle`/header fonts.
