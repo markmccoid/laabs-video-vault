@@ -17,7 +17,11 @@ export function useSelection() {
     });
   }, []);
 
-  const start = useCallback(() => setSelecting(true), []);
+  /** Enter select mode, optionally with one video already selected. */
+  const start = useCallback((first?: VideoId) => {
+    setSelecting(true);
+    if (first) setSelected(new Set([first]));
+  }, []);
   const finish = useCallback(() => {
     setSelecting(false);
     setSelected(new Set());

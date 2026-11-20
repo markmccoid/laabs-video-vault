@@ -9,9 +9,14 @@ import { attachTag, ensureShortTag, tagsForVideo } from "./lib/tags";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/** A video as list screens show it: the best thumbnail URL plus its tag names (alphabetical). */
 async function withThumb(ctx: QueryCtx, video: Doc<"videos">) {
-  const cachedThumb = video.thumbStorageId ? await ctx.storage.getUrl(video.thumbStorageId) : null;
-  return { ...video, thumbnail: cachedThumb ?? video.thumbUrl };
+  const [cachedThumb, tags] = await Promise.all([
+    video.thumbStorageId ? ctx.storage.getUrl(video.thumbStorageId) : null,
+    tagsForVideo(ctx, video._id),
+  ]);
+  const tagNames = tags.map((t) => t.name).sort((a, b) => a.localeCompare(b));
+  return { ...video, thumbnail: cachedThumb ?? video.thumbUrl, tagNames };
 }
 
 /** Most videos a list or search returns. TODO: paginate when libraries get large. */

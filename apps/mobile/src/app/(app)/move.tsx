@@ -1,15 +1,18 @@
-import { buildFolderTree, canMoveFolder, flattenFolderTree } from "@lvv/core";
+import { canMoveFolder } from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
-import { router, Stack, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
-import { NavRow, RowGroup } from "@/components/NavRow";
+import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { ActivityIndicator, ScrollView, View } from "react-native";
+import { FolderPicker, type PickerValue } from "@/components/FolderPicker";
+import { SheetHeader } from "@/components/ui";
 import { api, type Id } from "@/lib/api";
+import { useFolders } from "@/lib/folders";
 import { attempt } from "@/lib/prompt";
 import { decodeIds } from "@/lib/selection";
 import { useTheme } from "@/lib/theme";
 
 /**
- * Pick a destination. Moves either videos (`videoIds`, comma-separated) or
+ * Move to folder (2c). Moves either videos (`videoIds`, comma-separated) or
  * one folder (`folderId`); folder moves grey out destinations that would
  * create a cycle or nest too deep.
  */
@@ -18,62 +21,59 @@ export default function MoveSheet() {
   const params = useLocalSearchParams<{ videoIds?: string; folderId?: Id<"folders"> }>();
   const videoIds = decodeIds<Id<"videos">>(params.videoIds);
   const movingFolderId = params.folderId;
-  const folders = useQuery(api.folders.list);
+  const data = useFolders();
+  const single = useQuery(api.videos.get, videoIds.length === 1 ? { videoId: videoIds[0]! } : "skip");
   const moveVideos = useMutation(api.videos.move);
   const moveFolder = useMutation(api.folders.move);
+  const [picked, setPicked] = useState<PickerValue | null>(null);
 
+  const folders = data.folders;
   if (!folders) return <ActivityIndicator style={{ marginTop: 40 }} />;
 
-  const movingFolder = folders.find((f) => f._id === movingFolderId);
-  const rows = flattenFolderTree(buildFolderTree(folders));
+  const movingFolder = movingFolderId ? data.byId.get(movingFolderId) : undefined;
+  const current: PickerValue | undefined = movingFolder
+    ? (movingFolder.parentId ?? "root")
+    : single
+      ? (single.folderId ?? "root")
+      : undefined;
 
-  const choose = async (target: Id<"folders"> | undefined) => {
+  const subtitle = movingFolder
+    ? `“${movingFolder.name}” · now in ${movingFolder.parentId ? data.pathFor(movingFolder.parentId) : "Library"}`
+    : single
+      ? `“${single.title || "Video"}” · now in ${data.pathFor(single.folderId)}`
+      : `${videoIds.length} videos`;
+
+  const canMove = picked !== null && picked !== current;
+
+  const move = async () => {
+    if (picked === null) return;
+    const target = picked === "root" ? undefined : picked;
     const ok = movingFolderId
       ? await attempt("Couldn't move folder", () => moveFolder({ folderId: movingFolderId, parentId: target }))
       : await attempt("Couldn't move videos", () => moveVideos({ videoIds, folderId: target }));
     if (ok) router.back();
   };
 
-  const subtitle = movingFolder
-    ? `Move "${movingFolder.name}" into…`
-    : `Move ${videoIds.length} ${videoIds.length === 1 ? "video" : "videos"} to…`;
-
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: movingFolder ? "Move Folder" : "Move to" }} />
-      <Text style={[styles.subtitle, { color: theme.muted }]}>{subtitle}</Text>
-      <RowGroup>
-        <NavRow
-          icon={movingFolder ? "square.stack.3d.up" : "tray"}
-          label={movingFolder ? "Top level" : "Inbox"}
-          chevron={false}
-          checked={movingFolder ? movingFolder.parentId === undefined : undefined}
-          onPress={() => void choose(undefined)}
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <SheetHeader
+        title={movingFolder ? "Move folder" : "Move to folder"}
+        subtitle={subtitle}
+        onClose={() => router.back()}
+        action={{ label: "Move", onPress: () => void move(), disabled: !canMove }}
+      />
+      <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <FolderPicker
+          data={data}
+          value={picked}
+          onChange={setPicked}
+          current={current}
+          rootLabel={movingFolder ? "Top level" : "Inbox"}
+          rootIcon={movingFolder ? "square.stack.3d.up" : "tray"}
+          isDisabled={movingFolderId ? (id) => !canMoveFolder(folders, movingFolderId, id).ok : undefined}
+          allowCreate={!movingFolder}
         />
-        {rows.map((folder) => {
-          const blocked = movingFolderId ? !canMoveFolder(folders, movingFolderId, folder._id).ok : false;
-          return (
-            <NavRow
-              key={folder._id}
-              icon="folder"
-              label={folder.name}
-              indent={folder.depth}
-              chevron={false}
-              disabled={blocked}
-              checked={movingFolder ? movingFolder.parentId === folder._id : undefined}
-              onPress={() => void choose(folder._id)}
-            />
-          );
-        })}
-      </RowGroup>
-      {rows.length === 0 && (
-        <Text style={[styles.subtitle, { color: theme.muted }]}>Create folders from the Library to organize videos.</Text>
-      )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  content: { paddingVertical: 16, gap: 12 },
-  subtitle: { marginHorizontal: 20, fontSize: 14 },
-});

@@ -2,6 +2,7 @@ import { watchUrl } from "@lvv/core";
 import { Image } from "expo-image";
 import { type Ref, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { SymbolView } from "expo-symbols";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
 /**
@@ -20,15 +21,22 @@ const APP_ORIGIN = "https://com.markmccoid.laabs-video-vault";
 export type YouTubePlayerHandle = {
   /** Seek to `seconds` and play. Starts the player first if it isn't running. */
   seekTo: (seconds: number) => void;
+  /** Last reported playback position in seconds (0 before playback starts). */
+  getCurrentTime: () => number;
 };
 
 type Props = {
   youtubeId: string;
   thumbnail: string;
   ref?: Ref<YouTubePlayerHandle>;
+  /** Called about once a second while the player runs. */
+  onTimeUpdate?: (seconds: number, duration: number) => void;
 };
 
-type PlayerMessage = { type: "ready" } | { type: "error"; code: number | "load" };
+type PlayerMessage =
+  | { type: "ready" }
+  | { type: "error"; code: number | "load" }
+  | { type: "time"; t: number; d: number };
 
 /** IFrame API error codes: https://developers.google.com/youtube/iframe_api_reference#onError */
 function errorText(code: number | "load"): string {
@@ -68,7 +76,12 @@ function playerHtml(youtubeId: string, startSeconds: number): string {
       videoId: ${JSON.stringify(youtubeId)},
       playerVars: ${JSON.stringify(vars)},
       events: {
-        onReady: function(e){ send({type:"ready"}); e.target.playVideo(); },
+        onReady: function(e){
+          send({type:"ready"}); e.target.playVideo();
+          setInterval(function(){
+            try { send({type:"time", t:player.getCurrentTime()||0, d:player.getDuration()||0}); } catch(_){}
+          }, 1000);
+        },
         onError: function(e){ send({type:"error", code:e.data}); }
       }
     });
@@ -83,7 +96,8 @@ function playerHtml(youtubeId: string, startSeconds: number): string {
  * screen doesn't spin up a WebView for every visit), then plays inline.
  * Falls back to an "Open in YouTube" card when the video can't be embedded.
  */
-export function YouTubePlayer({ youtubeId, thumbnail, ref }: Props) {
+export function YouTubePlayer({ youtubeId, thumbnail, ref, onTimeUpdate }: Props) {
+  const time = useRef(0);
   const webview = useRef<WebView<NoExtraProps>>(null);
   // `start` is fixed when the WebView mounts; later seeks go through injectJavaScript.
   const [start, setStart] = useState<number | null>(null);
@@ -108,6 +122,7 @@ export function YouTubePlayer({ youtubeId, thumbnail, ref }: Props) {
           `player && player.seekTo(${Math.floor(seconds)}, true); player && player.playVideo(); true;`,
         );
       },
+      getCurrentTime: () => time.current,
     }),
     [start, error],
   );
@@ -121,7 +136,11 @@ export function YouTubePlayer({ youtubeId, thumbnail, ref }: Props) {
     }
     if (msg.type === "ready") setReady(true);
     if (msg.type === "error") setError(msg.code);
-  }, []);
+    if (msg.type === "time") {
+      time.current = msg.t;
+      onTimeUpdate?.(msg.t, msg.d);
+    }
+  }, [onTimeUpdate]);
 
   const openInYouTube = () => void Linking.openURL(watchUrl(youtubeId, resumeAt));
 
@@ -149,7 +168,7 @@ export function YouTubePlayer({ youtubeId, thumbnail, ref }: Props) {
       >
         <Image source={thumbnail} style={StyleSheet.absoluteFill} contentFit="cover" />
         <View style={styles.playButton}>
-          <Text style={styles.playGlyph}>▶</Text>
+          <SymbolView name="play.fill" size={24} tintColor="#2e2b25" />
         </View>
       </Pressable>
     );
@@ -192,7 +211,7 @@ export function YouTubePlayer({ youtubeId, thumbnail, ref }: Props) {
 }
 
 const styles = StyleSheet.create({
-  frame: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#000", overflow: "hidden" },
+  frame: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#000", overflow: "hidden", borderRadius: 26 },
   webview: { flex: 1, backgroundColor: "#000" },
   loading: { alignItems: "center", justifyContent: "center" },
   playButton: {
@@ -203,11 +222,10 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#000B",
+    backgroundColor: "rgba(245,234,216,0.9)",
     alignItems: "center",
     justifyContent: "center",
   },
-  playGlyph: { color: "#fff", fontSize: 26, marginLeft: 4 },
   fallback: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "#0009",

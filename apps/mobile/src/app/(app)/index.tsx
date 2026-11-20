@@ -1,182 +1,154 @@
-import { useAuthActions } from "@convex-dev/auth/react";
-import { buildFolderTree, type FolderNode } from "@lvv/core";
+import { matchesScope, type SearchScope } from "@lvv/core";
 import { useQuery } from "convex/react";
 import { router, Stack } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { AddVideoBar } from "@/components/AddVideoBar";
-import { countLabel, NavRow, RowGroup, SectionHeader } from "@/components/NavRow";
+import { SymbolView } from "expo-symbols";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import type { SearchBarCommands } from "react-native-screens";
+import { FolderGrid, FolderTree } from "@/components/FolderViews";
+import { Chip, countLabel, EmptyState, GroupLabel, plural, SectionTitle, Segmented } from "@/components/ui";
+import { SelectionTitle, SelectionToolbars } from "@/components/VideoListScreen";
 import { VideoBrowser } from "@/components/VideoBrowser";
-import { api, type Doc, type Id } from "@/lib/api";
-import { useFolderActions } from "@/lib/folderActions";
+import type { VideoListItem } from "@/components/VideoRow";
+import { api } from "@/lib/api";
+import { useFolders } from "@/lib/folders";
 import { useJustAdded } from "@/lib/justAdded";
-import { useShareSignOut } from "@/lib/shareBridge";
-import { useTheme } from "@/lib/theme";
-import { useViewMode } from "@/lib/viewMode";
-
-type Shorts = "only" | "hide" | undefined;
+import { usePreferences } from "@/lib/preferences";
+import { useSelection } from "@/lib/selection";
+import { GUTTER, radius, type, useTheme } from "@/lib/theme";
 
 export default function Library() {
-  const signOut = useSignOut();
-  const folderActions = useFolderActions();
+  const theme = useTheme();
+  const selection = useSelection();
+  const searchBar = useRef<SearchBarCommands>(null);
   const [searching, setSearching] = useState(false);
   const [text, setText] = useState("");
+  const inbox = useQuery(api.videos.listByFolder, {});
+  const prefs = usePreferences();
+
+  const closeSearch = () => {
+    setText("");
+    setSearching(false);
+  };
 
   return (
     <>
-      <Stack.SearchBar
-        placeholder="Search videos"
-        autoCapitalize="none"
-        onFocus={() => setSearching(true)}
-        onChangeText={(e) => setText(e.nativeEvent.text)}
-        onCancelButtonPress={() => {
-          setText("");
-          setSearching(false);
-        }}
-      />
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Menu icon="ellipsis.circle">
-          <Stack.Toolbar.MenuAction icon="folder.badge.plus" onPress={() => void folderActions.newFolder()}>
-            New Folder
-          </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction
-            icon="rectangle.portrait.and.arrow.right"
-            destructive
-            onPress={() => void signOut()}
-          >
-            Sign out
-          </Stack.Toolbar.MenuAction>
-        </Stack.Toolbar.Menu>
-      </Stack.Toolbar>
-      {searching ? <SearchResults text={text} /> : <LibraryHome onNewFolder={() => void folderActions.newFolder()} />}
+      <SelectionTitle selection={selection} title="Library" largeTitle />
+      {selection.selecting ? (
+        <SelectionToolbars selection={selection} allIds={(inbox ?? []).map((v) => v._id)} />
+      ) : (
+        <>
+          <Stack.Toolbar placement="left">
+            <Stack.Toolbar.Button icon="gearshape" accessibilityLabel="Settings" onPress={() => router.push("/settings")} />
+          </Stack.Toolbar>
+          <Stack.Toolbar placement="right">
+            <Stack.Toolbar.Button disabled={!inbox?.length} onPress={() => selection.start()}>
+              Select
+            </Stack.Toolbar.Button>
+            <Stack.Toolbar.Menu icon="plus" variant="prominent" tintColor={theme.accent} accessibilityLabel="Add">
+              <Stack.Toolbar.MenuAction icon="link" onPress={() => router.push("/add")}>
+                Add video
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction icon="folder.badge.plus" onPress={() => router.push("/new-folder")}>
+                New folder
+              </Stack.Toolbar.MenuAction>
+            </Stack.Toolbar.Menu>
+          </Stack.Toolbar>
+          <Stack.SearchBar
+            ref={searchBar}
+            placeholder="Search titles, descriptions, tags"
+            autoCapitalize="none"
+            tintColor={theme.accent}
+            onFocus={() => setSearching(true)}
+            onChangeText={(e) => setText(e.nativeEvent.text)}
+            onSearchButtonPress={(e) => prefs.addRecentSearch(e.nativeEvent.text)}
+            onCancelButtonPress={closeSearch}
+          />
+          <Stack.Toolbar>
+            <Stack.Toolbar.SearchBarSlot />
+          </Stack.Toolbar>
+        </>
+      )}
+      {searching ? (
+        <SearchView
+          text={text}
+          onPickRecent={(q) => {
+            searchBar.current?.setText(q);
+            setText(q);
+          }}
+        />
+      ) : (
+        <LibraryHome inbox={inbox} selection={selection} />
+      )}
     </>
   );
 }
 
-/** Sign out, first sending (or, after a warning, discarding) the Share Queue. */
-function useSignOut() {
-  const { signOut } = useAuthActions();
-  const share = useShareSignOut();
-  return async () => {
-    const pending = await share.pendingAfterSend();
-    if (pending > 0) {
-      const ok = await new Promise<boolean>((resolve) =>
-        Alert.alert(
-          "Shared videos not added yet",
-          `${pending} video${pending === 1 ? "" : "s"} you shared couldn't be added (are you offline?). Signing out discards ${pending === 1 ? "it" : "them"}.`,
-          [
-            { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-            { text: "Sign Out", style: "destructive", onPress: () => resolve(true) },
-          ],
-        ),
-      );
-      if (!ok) return;
-    }
-    await share.teardown();
-    await signOut();
-  };
-}
+// ─── Home (1a / 1c) ─────────────────────────────────────────────────────────
 
-// ─── Home ───────────────────────────────────────────────────────────────────
-
-function LibraryHome({ onNewFolder }: { onNewFolder: () => void }) {
+function LibraryHome({
+  inbox,
+  selection,
+}: {
+  inbox: VideoListItem[] | undefined;
+  selection: ReturnType<typeof useSelection>;
+}) {
   const theme = useTheme();
-  const inbox = useQuery(api.videos.listByFolder, {});
+  const data = useFolders();
   const justAdded = useJustAdded();
-  const folders = useQuery(api.folders.list);
-  const folderCounts = useQuery(api.folders.counts);
-  const tags = useQuery(api.tags.list);
-  const trash = useQuery(api.videos.listTrash);
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const { libraryLayout } = usePreferences();
+  const selecting = selection.selecting;
 
-  const toggle = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const filed = data.tree.reduce((sum, f) => sum + data.count(f._id), 0);
+  const total = filed + (inbox?.length ?? 0);
+  const newFolder = () => router.push("/new-folder");
+  const Folders = libraryLayout === "tree" ? FolderTree : FolderGrid;
 
-  const renderFolders = (nodes: FolderNode<Doc<"folders">>[]): React.ReactNode[] =>
-    nodes.flatMap((node) => [
-      <NavRow
-        key={node._id}
-        icon="folder"
-        label={node.name}
-        indent={node.depth}
-        detail={folderCounts ? countLabel(folderCounts[node._id] ?? 0) : undefined}
-        onPress={() => router.push(`/folder/${node._id}`)}
-        expanded={expanded.has(node._id)}
-        onToggle={node.children.length > 0 ? () => toggle(node._id) : undefined}
-      />,
-      ...(expanded.has(node._id) ? renderFolders(node.children) : []),
-    ]);
-
-  const tree = folders ? buildFolderTree(folders) : [];
-
-  return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled">
-      <AddVideoBar />
-
-      <RowGroup>
-        <NavRow
-          icon="tray"
-          label="Inbox"
-          detail={inbox ? countLabel(inbox.length) : undefined}
-          onPress={() => router.push("/inbox")}
-        />
-        {!!justAdded?.length && (
-          <NavRow
-            icon="clock.badge"
-            label="Just Added"
-            detail={countLabel(justAdded.length)}
-            onPress={() => router.push("/just-added")}
-          />
-        )}
-      </RowGroup>
-
-      <SectionHeader title="Folders" action={{ icon: "folder.badge.plus", label: "New Folder", onPress: onNewFolder }} />
-      {folders && tree.length === 0 ? (
-        <Pressable onPress={onNewFolder} style={styles.emptyHint}>
-          <Text style={{ color: theme.muted }}>No folders yet. Tap here to create one.</Text>
-        </Pressable>
-      ) : (
-        <RowGroup>{renderFolders(tree)}</RowGroup>
-      )}
-
-      {!!tags?.length && (
+  const header = (
+    <View>
+      {!selecting && (
         <>
-          <SectionHeader title="Tags" />
-          <RowGroup>
-            {tags.map((tag) => (
-              <NavRow
-                key={tag._id}
-                icon="number"
-                label={tag.name}
-                detail={countLabel(tag.count)}
-                onPress={() => router.push(`/tag/${tag._id}`)}
-              />
-            ))}
-          </RowGroup>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>
+            {plural(total, "video")} · {plural(data.folders?.length ?? 0, "folder")}
+          </Text>
+          {data.folders && <Folders data={data} nodes={data.tree} onNewFolder={newFolder} />}
+          {!!justAdded?.length && (
+            <Pressable
+              onPress={() => router.push("/just-added")}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.justAdded, { backgroundColor: theme.sageSoft, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <SymbolView name="clock" size={16} tintColor={theme.sageInk} />
+              <Text style={[type.label, { color: theme.sageInk, flex: 1, fontSize: 15 }]}>Just added</Text>
+              <Text style={[type.metaStrong, { color: theme.sageInk }]}>{countLabel(justAdded.length)}</Text>
+              <SymbolView name="chevron.right" size={12} weight="bold" tintColor={theme.sageInk} />
+            </Pressable>
+          )}
         </>
       )}
+      <SectionTitle title="Inbox" detail="Not filed yet" />
+    </View>
+  );
 
-      <View style={styles.trash}>
-        <RowGroup>
-          <NavRow
-            icon="trash"
-            label="Trash"
-            tint={theme.muted}
-            detail={trash?.length ? countLabel(trash.length) : undefined}
-            onPress={() => router.push("/trash")}
-          />
-        </RowGroup>
-      </View>
-    </ScrollView>
+  return (
+    <VideoBrowser
+      videos={inbox}
+      selection={selection}
+      header={header}
+      emptyTitle="Inbox is clear"
+      emptyBody="New videos land here until you file them. Tap + to add one."
+    />
   );
 }
 
-// ─── Search ─────────────────────────────────────────────────────────────────
+// ─── Search (2f) ────────────────────────────────────────────────────────────
+
+const SCOPES: { value: SearchScope; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "title", label: "Title" },
+  { value: "description", label: "Description" },
+  { value: "tags", label: "Tags" },
+];
 
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -187,64 +159,111 @@ function useDebounced<T>(value: T, ms: number): T {
   return debounced;
 }
 
-function SearchResults({ text }: { text: string }) {
-  const [viewMode] = useViewMode();
+function SearchView({ text, onPickRecent }: { text: string; onPickRecent: (q: string) => void }) {
+  const theme = useTheme();
+  const prefs = usePreferences();
+  const data = useFolders();
   const tags = useQuery(api.tags.list);
-  const [tagIds, setTagIds] = useState<Id<"tags">[]>([]);
-  const [shorts, setShorts] = useState<Shorts>(undefined);
+  const [scope, setScope] = useState<SearchScope>("all");
   const query = useDebounced(text.trim(), 200);
+  const results = useQuery(api.videos.search, query ? { text: query, tagIds: [] } : "skip");
+  const filtered = results?.filter((v) => matchesScope(v, query, scope));
 
-  const active = query.length > 0 || tagIds.length > 0 || shorts === "only";
-  const results = useQuery(api.videos.search, active ? { text: query, tagIds, shorts } : "skip");
-
-  const toggleTag = (id: Id<"tags">) =>
-    setTagIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
-
-  const chips = (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-      <Chip label="Shorts only" on={shorts === "only"} onPress={() => setShorts(shorts === "only" ? undefined : "only")} />
-      <Chip label="No Shorts" on={shorts === "hide"} onPress={() => setShorts(shorts === "hide" ? undefined : "hide")} />
-      {(tags ?? []).map((tag) => (
-        <Chip key={tag._id} label={`#${tag.name}`} on={tagIds.includes(tag._id)} onPress={() => toggleTag(tag._id)} />
-      ))}
-    </ScrollView>
+  const scopePicker = (
+    <View style={styles.scope}>
+      <Segmented value={scope} options={SCOPES} onChange={setScope} />
+    </View>
   );
+
+  if (!query) {
+    return (
+      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        {scopePicker}
+        {prefs.recentSearches.length > 0 && (
+          <>
+            <View style={styles.recentHeader}>
+              <GroupLabel>Recent</GroupLabel>
+              <Pressable onPress={prefs.clearRecentSearches} hitSlop={8} accessibilityRole="button">
+                <Text style={[type.metaStrong, { color: theme.accentInk }]}>Clear</Text>
+              </Pressable>
+            </View>
+            {prefs.recentSearches.map((q) => (
+              <Pressable
+                key={q}
+                onPress={() => onPickRecent(q)}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.recentRow, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <SymbolView name="clock.arrow.circlepath" size={16} tintColor={theme.muted} />
+                <Text style={[type.body, { color: theme.text, flex: 1 }]}>{q}</Text>
+                <SymbolView name="arrow.up.left" size={13} tintColor={theme.muted} />
+              </Pressable>
+            ))}
+          </>
+        )}
+        {!!tags?.length && (
+          <>
+            <GroupLabel>Browse by tag</GroupLabel>
+            <View style={styles.tagCloud}>
+              {tags.map((tag) => (
+                <Chip
+                  key={tag._id}
+                  label={tag.name}
+                  detail={countLabel(tag.count)}
+                  variant="sage"
+                  size="md"
+                  icon="tag.fill"
+                  onPress={() => router.push(`/tag/${tag._id}`)}
+                />
+              ))}
+            </View>
+          </>
+        )}
+        {!prefs.recentSearches.length && !tags?.length && (
+          <EmptyState title="Search your library" body="Titles, descriptions, and tags." />
+        )}
+      </ScrollView>
+    );
+  }
 
   return (
     <VideoBrowser
-      videos={active ? results : []}
-      viewMode={viewMode}
-      header={chips}
-      emptyTitle={active ? "No matches" : "Search your library"}
-      emptyBody={
-        active
-          ? "Try different words or fewer filters."
-          : "Titles, channels, tags, notes, and descriptions. Tap a chip to filter."
+      videos={filtered}
+      query={query}
+      pathFor={(v) => data.pathFor(v.folderId)}
+      onPressVideo={(v) => {
+        prefs.addRecentSearch(query);
+        router.push(`/video/${v._id}`);
+      }}
+      header={
+        <View>
+          {scopePicker}
+          {filtered && filtered.length > 0 && (
+            <Text style={[styles.resultCount, { color: theme.muted }]}>{plural(filtered.length, "result")}</Text>
+          )}
+        </View>
       }
+      emptyTitle="No matches"
+      emptyBody={scope === "all" ? "Try different words." : "Try a different scope, or All."}
     />
   );
 }
 
-function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
-      style={[
-        styles.chip,
-        { backgroundColor: on ? theme.accent : theme.card, borderColor: on ? theme.accent : theme.border },
-      ]}
-    >
-      <Text style={{ color: on ? theme.accentText : theme.text, fontWeight: "600" }}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  emptyHint: { marginHorizontal: 20, paddingVertical: 6 },
-  trash: { marginTop: 28, marginBottom: 40 },
-  chips: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  chip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7 },
+  subtitle: { ...type.body, fontSize: 14, paddingHorizontal: GUTTER, marginTop: -2, marginBottom: 16 },
+  justAdded: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: GUTTER,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    minHeight: 48,
+    borderRadius: radius.card,
+  },
+  scope: { paddingHorizontal: GUTTER, paddingTop: 8, paddingBottom: 4 },
+  recentHeader: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingRight: GUTTER },
+  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: GUTTER + 4 },
+  tagCloud: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: GUTTER },
+  resultCount: { ...type.metaStrong, paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 4 },
 });

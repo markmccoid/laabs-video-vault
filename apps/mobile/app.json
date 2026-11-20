@@ -37,7 +37,18 @@
       "expo-router",
       "expo-secure-store",
       "expo-image",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "../../node_modules/@expo-google-fonts/caprasimo/400Regular/Caprasimo_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/figtree/400Regular/Figtree_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/figtree/600SemiBold/Figtree_600SemiBold.ttf",
+            "../../node_modules/@expo-google-fonts/figtree/700Bold/Figtree_700Bold.ttf"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
