@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/organic-bc7c979e-a6ac-4381-a7b5-4fb211fea2b6/styles.css">
+<script src="_ds/organic-bc7c979e-a6ac-4381-a7b5-4fb211fea2b6/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:var(--color-surface)}
+a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-800)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pushIn{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes popIn{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+@keyframes toastIn{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+</style>
+</helmet>
+<div style="min-height:{{ pageMinH }}; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:56px; padding:{{ pagePad }}; box-sizing:border-box; font-family:var(--font-body); color:var(--color-text)">
+  <sc-if value="{{ showCaption }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:280px; display:flex; flex-direction:column; gap:14px">
+      <h2 style="margin:0">Shelf</h2>
+      <p style="margin:0; font-size:15px; text-wrap:pretty">A calm home for the YouTube videos worth keeping. Folders three levels deep, tags, and search across everything.</p>
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px; color:var(--color-neutral-700)">
+        <div style="font-weight:700; color:var(--color-accent-2-700)">Try</div>
+        <div>Hold a video, then drag it onto a folder or breadcrumb</div>
+        <div>Hold and release for quick actions</div>
+        <div>Select → move several at once</div>
+        <div>Search “dough” for description matches</div>
+        <div>Settings → switch library layout</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="width:426px; height:898px; flex:none; padding:12px; box-sizing:border-box; border-radius:68px; background:var(--color-neutral-900); box-shadow:var(--shadow-lg)">
+    <div ref="{{ screenRef }}" data-screen-label="Phone" style="position:relative; width:402px; height:874px; border-radius:56px; overflow:hidden; background:var(--color-bg)">
+
+      <div ref="{{ scrollRef }}" onScroll="{{ onScroll }}" style="position:absolute; inset:0; overflow-y:auto; scrollbar-width:none; padding:104px 0 132px; box-sizing:border-box">
+        <div key="{{ screenKey }}" style="animation:pushIn .3s cubic-bezier(.2,.8,.2,1)">
+
+          <div style="padding:0 20px 6px; display:flex; flex-direction:column; gap:6px">
+            <sc-if value="{{ showCrumbs }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px; font-size:13px; font-weight:700; color:var(--color-accent-2-700)">
+                <sc-for list="{{ crumbs }}" as="c">
+                  <sc-if value="{{ c.showSep }}"><span style="opacity:.5">›</span></sc-if>
+                  <button data-drop="{{ c.dropId }}" onClick="{{ c.onTap }}" style="all:unset; cursor:pointer; padding:2px 7px; border-radius:999px; background:{{ c.bg }}; box-shadow:{{ c.ring }}; transition:background .15s">{{ c.name }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <h1 style="margin:0; font-size:36px; line-height:1.08">{{ screenTitle }}</h1>
+            <sc-if value="{{ showSubtitle }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--color-neutral-700)">
+                <sc-if value="{{ showLevel }}">
+                  <span style="display:flex; gap:3px"><sc-for list="{{ levelDots }}" as="d"><span style="width:7px; height:7px; border-radius:50%; background:{{ d.bg }}"></span></sc-for></span>
+                </sc-if>
+                <span>{{ subtitle }}</span>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="Search" style="padding:8px 20px 4px">
+              <div style="display:flex; gap:4px; padding:4px; border-radius:999px; background:var(--color-surface)">
+                <sc-for list="{{ scopes }}" as="s">
+                  <button onClick="{{ s.onTap }}" style="all:unset; cursor:pointer; flex:1; text-align:center; height:34px; line-height:34px; border-radius:999px; font-size:13px; font-weight:700; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.shadow }}">{{ s.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ searchEmpty }}">
+              <div style="padding:18px 20px 0; display:flex; flex-direction:column; gap:22px">
+                <div style="display:flex; flex-direction:column; gap:2px">
+                  <h5 style="margin:0 0 6px">Recent</h5>
+                  <sc-for list="{{ recents }}" as="r">
+                    <button onClick="{{ r.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:12px; height:44px; padding:0 12px; margin:0 -12px; border-radius:14px; font-size:15px" style-hover="background:var(--color-surface)">
+                      <span style="display:flex; font-size:16px; color:var(--color-neutral-500)">{{ I.clock }}</span>{{ r.q }}
+                    </button>
+                  </sc-for>
+                </div>
+                <div>
+                  <h5 style="margin:0 0 10px">Browse by tag</h5>
+                  <div style="display:flex; flex-wrap:wrap; gap:8px">
+                    <sc-for list="{{ tagCloud }}" as="t">
+                      <button onClick="{{ t.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:6px; padding:7px 12px 7px 14px; border-radius:999px; font-size:13.5px; font-weight:600; background:var(--color-accent-2-200); color:var(--color-accent-2-800)" style-hover="background:var(--color-accent-2-300)">{{ t.name }}<span style="font-size:12px; opacity:.7">{{ t.count }}</span></button>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+            <section data-screen-label="Library grid" style="padding:14px 20px 4px">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                <sc-for list="{{ rootFolders }}" as="f" hint-placeholder-count="3">
+                  <button data-drop="{{ f.id }}" onClick="{{ f.onTap }}" style="all:unset; cursor:pointer; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; gap:26px; min-height:124px; padding:16px; border-radius:var(--radius-lg); background:{{ f.bg }}; box-sizing:border-box; box-shadow:{{ f.ring }}; transform:{{ f.scale }}; transition:transform .15s, box-shadow .15s" style-active="transform:scale(.97)">
+                    <span style="position:absolute; width:110px; height:110px; border-radius:50%; right:-34px; top:-38px; background:{{ f.blob }}; opacity:.5"></span>
+                    <span style="position:relative; display:flex; font-size:26px; color:{{ f.icon }}">{{ I.folderFill }}</span>
+                    <span style="position:relative; display:flex; flex-direction:column; gap:2px">
+                      <span style="font-family:var(--font-heading); font-size:19px; line-height:1.15; color:{{ f.ink }}">{{ f.name }}</span>
+                      <span style="font-size:12.5px; font-weight:600; color:{{ f.ink }}; opacity:.75">{{ f.meta }}</span>
+                    </span>
+                  </button>
+                </sc-for>
+                <button onClick="{{ newRootFolder }}" style="all:unset; cursor:pointer; display:flex; flex-direction:column; justify-content:space-between; gap:26px; min-height:124px; padding:16px; border-radius:var(--radius-lg); border:2px dashed var(--color-neutral-400); box-sizing:border-box; color:var(--color-neutral-700)" style-hover="border-color:var(--color-accent-400); color:var(--color-accent-700)">
+                  <span style="display:flex; font-size:26px">{{ I.folderPlus }}</span>
+                  <span style="font-family:var(--font-heading); font-size:17px">New folder</span>
+                </button>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ showTree }}" hint-placeholder-val="{{ false }}">
+            <section data-screen-label="Library tree" style="padding:12px 20px 4px">
+              <div style="display:flex; flex-direction:column; padding:6px; border-radius:var(--radius-lg); background:var(--color-surface)">
+                <sc-for list="{{ treeNodes }}" as="n">
+                  <div data-drop="{{ n.id }}" onClick="{{ n.onTap }}" style="display:flex; align-items:center; gap:8px; min-height:48px; padding:4px 12px 4px 0; padding-left:{{ n.padL }}; border-radius:18px; cursor:pointer; background:{{ n.bg }}; box-shadow:{{ n.ring }}; transition:background .15s" style-hover="background:color-mix(in srgb, var(--color-text) 5%, transparent)">
+                    <button onClick="{{ n.onToggle }}" aria-label="Expand" style="all:unset; cursor:pointer; flex:none; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--color-neutral-600); opacity:{{ n.chevOpacity }}; transform:{{ n.chevRot }}; transition:transform .2s">{{ I.chevR }}</button>
+                    <span style="display:flex; font-size:20px; color:{{ n.icon }}">{{ I.folderFill }}</span>
+                    <span style="flex:1; font-size:15.5px; font-weight:{{ n.weight }}">{{ n.name }}</span>
+                    <span style="font-size:13px; font-weight:600; color:var(--color-neutral-600)">{{ n.count }}</span>
+                  </div>
+                </sc-for>
+                <button onClick="{{ newRootFolder }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:8px; min-height:46px; padding:0 12px 0 36px; border-radius:18px; font-size:15px; font-weight:700; color:var(--color-accent-700)" style-hover="background:color-mix(in srgb, var(--color-accent) 10%, transparent)">
+                  <span style="display:flex; font-size:19px">{{ I.folderPlus }}</span>New folder
+                </button>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ showColumns }}" hint-placeholder-val="{{ false }}">
+            <section data-screen-label="Library columns" style="padding:12px 0 4px">
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:0 20px 10px; font-size:13px; font-weight:700; color:var(--color-accent-2-700)">
+                <sc-for list="{{ colCrumbs }}" as="c">
+                  <sc-if value="{{ c.showSep }}"><span style="opacity:.5">›</span></sc-if>
+                  <button data-drop="{{ c.dropId }}" onClick="{{ c.onTap }}" style="all:unset; cursor:pointer; padding:5px 11px; border-radius:999px; background:{{ c.bg }}; color:{{ c.fg }}; box-shadow:{{ c.ring }}">{{ c.name }}</button>
+                </sc-for>
+              </div>
+              <div ref="{{ colRef }}" style="display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding:0 20px; scroll-behavior:smooth">
+                <sc-for list="{{ columns }}" as="col">
+                  <div style="flex:none; width:172px; height:292px; overflow-y:auto; scrollbar-width:none; display:flex; flex-direction:column; gap:2px; padding:6px; box-sizing:border-box; border-radius:26px; background:var(--color-surface); animation:pushIn .25s">
+                    <div style="font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--color-neutral-600); padding:6px 10px 4px">{{ col.title }}</div>
+                    <sc-for list="{{ col.items }}" as="it">
+                      <button data-drop="{{ it.id }}" onClick="{{ it.onTap }}" style="all:unset; cursor:pointer; flex:none; display:flex; align-items:center; gap:8px; min-height:44px; padding:0 8px 0 10px; border-radius:16px; background:{{ it.bg }}; box-shadow:{{ it.ring }}; transition:background .15s">
+                        <span style="display:flex; font-size:17px; color:{{ it.icon }}">{{ I.folderFill }}</span>
+                        <span style="flex:1; min-width:0; font-size:14.5px; font-weight:700; color:{{ it.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ it.name }}</span>
+                        <sc-if value="{{ it.hasKids }}"><span style="display:flex; font-size:14px; color:{{ it.fg }}; opacity:.6">{{ I.chevR }}</span></sc-if>
+                      </button>
+                    </sc-for>
+                    <sc-if value="{{ col.empty }}"><div style="padding:8px 10px; font-size:13px; color:var(--color-neutral-600)">No subfolders</div></sc-if>
+                    <sc-if value="{{ col.canAdd }}">
+                      <button onClick="{{ col.onAdd }}" style="all:unset; cursor:pointer; flex:none; display:flex; align-items:center; gap:8px; min-height:42px; padding:0 10px; border-radius:16px; font-size:13.5px; font-weight:700; color:var(--color-accent-700)" style-hover="background:color-mix(in srgb, var(--color-accent) 10%, transparent)"><span style="display:flex; font-size:16px">{{ I.folderPlus }}</span>New</button>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ showFolderRows }}" hint-placeholder-val="{{ false }}">
+            <section data-screen-label="Folder" style="padding:14px 20px 4px; display:flex; flex-direction:column; gap:8px">
+              <sc-for list="{{ folderRows }}" as="f">
+                <button data-drop="{{ f.id }}" onClick="{{ f.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:14px; min-height:64px; padding:10px 14px 10px 10px; border-radius:22px; background:{{ f.rowBg }}; box-shadow:{{ f.ring }}; box-sizing:border-box; transition:background .15s, box-shadow .15s" style-hover="background:var(--color-neutral-300)">
+                  <span style="flex:none; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; background:{{ f.bg }}; color:{{ f.icon }}">{{ I.folderFill }}</span>
+                  <span style="flex:1; min-width:0; display:flex; flex-direction:column">
+                    <span style="font-size:16px; font-weight:700">{{ f.name }}</span>
+                    <span style="font-size:12.5px; color:var(--color-neutral-700)">{{ f.meta }}</span>
+                  </span>
+                  <span style="display:flex; font-size:18px; color:var(--color-neutral-500)">{{ I.chevR }}</span>
+                </button>
+              </sc-for>
+              <sc-if value="{{ canAddRow }}">
+                <button onClick="{{ addRowTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:14px; min-height:60px; padding:8px 14px 8px 10px; border-radius:22px; border:2px dashed var(--color-neutral-400); box-sizing:border-box; color:var(--color-neutral-700); font-weight:700; font-size:15px" style-hover="border-color:var(--color-accent-400); color:var(--color-accent-700)">
+                  <span style="flex:none; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:20px">{{ I.folderPlus }}</span>{{ addRowLabel }}
+                </button>
+              </sc-if>
+              <sc-if value="{{ atMaxDepth }}">
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:18px; background:var(--color-accent-2-100); color:var(--color-accent-2-800); font-size:13px; font-weight:600">
+                  <span style="display:flex; font-size:16px">{{ I.layers }}</span>Deepest level — this folder holds videos only.
+                </div>
+              </sc-if>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+            <section data-screen-label="Settings" style="padding:14px 20px 0; display:flex; flex-direction:column; gap:24px">
+              <sc-for list="{{ settingsGroups }}" as="g">
+                <div style="display:flex; flex-direction:column; gap:8px">
+                  <h6 style="margin:0 0 0 16px; color:var(--color-neutral-600)">{{ g.title }}</h6>
+                  <div style="display:flex; flex-direction:column; gap:2px; padding:6px; border-radius:26px; background:var(--color-surface)">
+                    <sc-for list="{{ g.rows }}" as="r">
+                      <sc-if value="{{ r.isSeg }}">
+                        <div style="display:flex; flex-direction:column; gap:10px; padding:10px 10px 8px">
+                          <div style="display:flex; align-items:center; gap:12px">
+                            <span style="flex:none; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:{{ r.iconBg }}; color:{{ r.iconFg }}">{{ r.icon }}</span>
+                            <span style="font-size:15.5px; font-weight:600">{{ r.label }}</span>
+                          </div>
+                          <div style="display:flex; gap:3px; padding:3px; border-radius:999px; background:color-mix(in srgb, var(--color-text) 7%, transparent)">
+                            <sc-for list="{{ r.segs }}" as="s">
+                              <button onClick="{{ s.onTap }}" style="all:unset; cursor:pointer; flex:1; text-align:center; height:32px; line-height:32px; border-radius:999px; font-size:13px; font-weight:700; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.shadow }}">{{ s.label }}</button>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ r.isLink }}">
+                        <button onClick="{{ r.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:12px; min-height:52px; padding:0 12px 0 10px; border-radius:20px" style-hover="background:color-mix(in srgb, var(--color-text) 6%, transparent)">
+                          <span style="flex:none; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:{{ r.iconBg }}; color:{{ r.iconFg }}">{{ r.icon }}</span>
+                          <span style="flex:1; font-size:15.5px; font-weight:600">{{ r.label }}</span>
+                          <span style="font-size:14px; color:var(--color-neutral-600)">{{ r.value }}</span>
+                          <span style="display:flex; font-size:16px; color:var(--color-neutral-500)">{{ I.chevR }}</span>
+                        </button>
+                      </sc-if>
+                    </sc-for>
+                  </div>
+                  <div style="padding:0 16px; font-size:12.5px; line-height:1.45; color:var(--color-neutral-600)">{{ g.note }}</div>
+                </div>
+              </sc-for>
+              <div style="text-align:center; font-size:12.5px; color:var(--color-neutral-600)">Shelf 1.0 · {{ libStats }}</div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ showVideos }}" hint-placeholder-val="{{ true }}">
+            <section style="padding:22px 20px 0; display:flex; flex-direction:column; gap:2px">
+              <sc-if value="{{ showVideoHeader }}" hint-placeholder-val="{{ true }}">
+                <div data-drop="{{ headerDrop }}" style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:0 -10px 6px; padding:6px 10px; border-radius:16px; background:{{ headerBg }}; box-shadow:{{ headerRing }}">
+                  <h4 style="margin:0">{{ videoHeader }}</h4>
+                  <span style="font-size:12.5px; color:var(--color-neutral-600)">{{ videoHint }}</span>
+                </div>
+              </sc-if>
+              <sc-for list="{{ videoItems }}" as="v" hint-placeholder-count="4">
+                <div onPointerDown="{{ v.onDown }}" onClick="{{ v.onClick }}" onContextMenu="{{ v.onCtx }}" style="display:flex; gap:12px; align-items:flex-start; padding:10px; margin:0 -10px; border-radius:22px; cursor:pointer; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; background:{{ v.rowBg }}; opacity:{{ v.opacity }}; box-shadow:{{ v.lift }}; transform:{{ v.press }}; transition:background .15s, transform .2s, box-shadow .2s, opacity .2s">
+                  <sc-if value="{{ selecting }}">
+                    <div style="flex:none; align-self:center; width:26px; height:26px; border-radius:50%; box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-size:14px; border:2px solid {{ v.checkBorder }}; background:{{ v.checkBg }}; color:var(--color-bg)">
+                      <sc-if value="{{ v.checked }}">{{ I.check }}</sc-if>
+                    </div>
+                  </sc-if>
+                  <div style="position:relative; flex:none; width:128px; height:72px; border-radius:16px; overflow:hidden; background:{{ v.thumb }}">
+                    <div style="position:absolute; width:86px; height:86px; border-radius:50%; right:-24px; bottom:-34px; background:{{ v.blob }}; opacity:.6"></div>
+                    <div style="position:absolute; left:9px; top:9px; width:26px; height:26px; border-radius:50%; background:color-mix(in srgb, var(--color-bg) 78%, transparent); display:flex; align-items:center; justify-content:center; font-size:11px; padding-left:2px; box-sizing:border-box">{{ I.play }}</div>
+                    <div style="position:absolute; right:6px; bottom:6px; padding:1px 7px; border-radius:999px; background:color-mix(in srgb, var(--color-neutral-900) 80%, transparent); color:var(--color-bg); font-size:11px; font-weight:700">{{ v.dur }}</div>
+                  </div>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px">
+                    <div style="font-size:15px; font-weight:700; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden">
+                      <sc-for list="{{ v.titleParts }}" as="p"><span style="background:{{ p.bg }}; border-radius:4px">{{ p.t }}</span></sc-for>
+                    </div>
+                    <div style="font-size:12.5px; color:var(--color-neutral-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ v.meta }}</div>
+                    <sc-if value="{{ v.hasSnippet }}">
+                      <div style="font-size:12.5px; line-height:1.4; color:var(--color-neutral-800)"><sc-for list="{{ v.snippetParts }}" as="p"><span style="background:{{ p.bg }}; border-radius:4px">{{ p.t }}</span></sc-for></div>
+                    </sc-if>
+                    <sc-if value="{{ v.hasTags }}">
+                      <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:3px">
+                        <sc-for list="{{ v.tags }}" as="t"><span style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:{{ t.bg }}; color:{{ t.fg }}">{{ t.name }}</span></sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ notSelecting }}">
+                    <button data-more="1" onClick="{{ v.onMore }}" aria-label="More actions" style="all:unset; flex:none; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--color-neutral-600); cursor:pointer" style-hover="background:var(--color-surface); color:var(--color-text)">{{ I.more }}</button>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noVideos }}">
+                <div style="display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:22px; border-radius:var(--radius-lg); background:var(--color-surface)">
+                  <span style="display:flex; font-size:24px; color:var(--color-accent-2-600)">{{ I.inbox }}</span>
+                  <div style="font-family:var(--font-heading); font-size:19px">{{ emptyTitle }}</div>
+                  <div style="font-size:14px; color:var(--color-neutral-700)">{{ emptyBody }}</div>
+                  <sc-if value="{{ emptyCanAdd }}">
+                    <button class="btn btn-primary" onClick="{{ openAdd }}" style="border-radius:999px; margin-top:4px">Add a video</button>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </section>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="position:absolute; top:0; left:0; right:0; height:116px; z-index:15; pointer-events:none; background:linear-gradient(var(--color-bg) 62%, color-mix(in srgb, var(--color-bg) 0%, transparent)); opacity:{{ fadeOpacity }}; transition:opacity .2s"></div>
+
+      <div style="position:absolute; top:0; left:0; right:0; height:54px; z-index:80; display:flex; align-items:center; justify-content:space-between; padding:4px 34px 0 42px; box-sizing:border-box; font-size:17px; font-weight:700; pointer-events:none; color:{{ statusInk }}">
+        <span>9:41</span>
+        <span style="position:absolute; left:50%; top:11px; width:124px; height:36px; margin-left:-62px; border-radius:999px; background:#000"></span>
+        <span style="display:flex; align-items:center; gap:6px">
+          <span style="display:flex; align-items:flex-end; gap:2px; height:12px"><span style="width:3px; height:4px; border-radius:1px; background:currentColor"></span><span style="width:3px; height:6px; border-radius:1px; background:currentColor"></span><span style="width:3px; height:9px; border-radius:1px; background:currentColor"></span><span style="width:3px; height:12px; border-radius:1px; background:currentColor"></span></span>
+          <span style="width:25px; height:12px; border-radius:4px; border:1.5px solid currentColor; opacity:.9; padding:1.5px; box-sizing:border-box; display:flex"><span style="flex:1; border-radius:2px; background:currentColor"></span></span>
+        </span>
+      </div>
+
+      <div style="position:absolute; top:56px; left:16px; right:16px; height:48px; z-index:25; display:flex; align-items:center; justify-content:space-between; gap:8px">
+        <div style="display:flex; gap:8px; min-width:0">
+          <sc-if value="{{ showGear }}">
+            <button onClick="{{ openSettings }}" aria-label="Settings" style="all:unset; cursor:pointer; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:20px; background:color-mix(in srgb, var(--color-bg) 58%, transparent); backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">{{ I.gear }}</button>
+          </sc-if>
+          <sc-if value="{{ showBack }}">
+            <button data-drop="{{ backDrop }}" onClick="{{ goBack }}" style="all:unset; cursor:pointer; height:44px; padding:0 16px 0 8px; display:flex; align-items:center; gap:2px; border-radius:999px; font-size:15px; font-weight:700; max-width:150px; box-sizing:border-box; background:{{ backBg }}; backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:{{ backRing }}">
+              <span style="display:flex; font-size:22px">{{ I.chevL }}</span>
+              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ backLabel }}</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ selecting }}">
+            <button onClick="{{ selectAll }}" style="all:unset; cursor:pointer; height:44px; padding:0 18px; display:flex; align-items:center; border-radius:999px; font-size:15px; font-weight:700; background:color-mix(in srgb, var(--color-bg) 58%, transparent); backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">{{ selectAllLabel }}</button>
+          </sc-if>
+        </div>
+        <div style="position:absolute; left:50%; transform:translateX(-50%); font-size:16px; font-weight:700; white-space:nowrap; pointer-events:none; opacity:{{ compactOpacity }}; transition:opacity .2s; color:{{ compactInk }}">{{ compactTitle }}</div>
+        <div style="display:flex; gap:8px">
+          <sc-if value="{{ showSelectBtn }}">
+            <button onClick="{{ startSelect }}" style="all:unset; cursor:pointer; height:44px; padding:0 18px; display:flex; align-items:center; border-radius:999px; font-size:15px; font-weight:700; background:color-mix(in srgb, var(--color-bg) 58%, transparent); backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">Select</button>
+          </sc-if>
+          <sc-if value="{{ showPlus }}">
+            <button onClick="{{ toggleAddMenu }}" aria-label="Add" style="all:unset; cursor:pointer; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:22px; background:var(--color-accent); color:var(--color-bg); box-shadow:var(--shadow-md)" style-hover="background:var(--color-accent-600)" style-active="background:var(--color-accent-700)">{{ I.plus }}</button>
+          </sc-if>
+          <sc-if value="{{ selecting }}">
+            <button onClick="{{ endSelect }}" style="all:unset; cursor:pointer; height:44px; padding:0 18px; display:flex; align-items:center; border-radius:999px; font-size:15px; font-weight:700; background:var(--color-accent); color:var(--color-bg); box-shadow:var(--shadow-md)" style-hover="background:var(--color-accent-600)">Done</button>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ addMenuOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ toggleAddMenu }}" style="position:absolute; inset:0; z-index:30"></div>
+        <div style="position:absolute; top:110px; right:16px; width:230px; z-index:31; padding:6px; border-radius:26px; transform-origin:top right; animation:popIn .2s cubic-bezier(.2,.9,.3,1.2); background:color-mix(in srgb, var(--color-bg) 72%, transparent); backdrop-filter:blur(24px) saturate(1.7); -webkit-backdrop-filter:blur(24px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-lg)">
+          <sc-for list="{{ addMenuItems }}" as="m">
+            <button onClick="{{ m.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:12px; width:100%; height:48px; padding:0 14px; border-radius:20px; box-sizing:border-box; font-size:15.5px; font-weight:600" style-hover="background:color-mix(in srgb, var(--color-accent) 12%, transparent)">
+              <span style="display:flex; font-size:19px; color:var(--color-accent-600)">{{ m.icon }}</span>{{ m.label }}
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showSearchPill }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; left:16px; right:16px; bottom:28px; z-index:20">
+          <button onClick="{{ goSearch }}" style="all:unset; cursor:pointer; width:100%; height:54px; display:flex; align-items:center; gap:10px; padding:0 20px; border-radius:999px; box-sizing:border-box; font-size:16px; color:var(--color-neutral-700); background:color-mix(in srgb, var(--color-bg) 58%, transparent); backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">
+            <span style="display:flex; font-size:19px; color:var(--color-text)">{{ I.search }}</span>{{ searchPillLabel }}
+          </button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; left:16px; right:16px; bottom:28px; z-index:20; display:flex; gap:10px; align-items:center; animation:toastIn .25s">
+          <label style="flex:1; height:54px; display:flex; align-items:center; gap:10px; padding:0 8px 0 20px; border-radius:999px; box-sizing:border-box; background:color-mix(in srgb, var(--color-bg) 70%, transparent); backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:2px solid var(--color-accent-300); box-shadow:var(--shadow-md)">
+            <span style="display:flex; font-size:19px">{{ I.search }}</span>
+            <input ref="{{ searchRef }}" value="{{ query }}" onChange="{{ onQuery }}" onKeyDown="{{ onQueryKey }}" placeholder="Titles, descriptions, tags" style="flex:1; min-width:0; border:0; background:transparent; font:inherit; font-size:16px; outline:none; color:var(--color-text)">
+            <sc-if value="{{ hasQuery }}">
+              <button onClick="{{ clearQuery }}" aria-label="Clear" style="all:unset; cursor:pointer; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; background:var(--color-neutral-300); color:var(--color-neutral-800)">{{ I.x }}</button>
+            </sc-if>
+          </label>
+          <button onClick="{{ closeSearch }}" aria-label="Close search" style="all:unset; cursor:pointer; flex:none; width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; box-sizing:border-box; background:color-mix(in srgb, var(--color-bg) 58%, transparent); backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">{{ I.x }}</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ selecting }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; left:16px; right:16px; bottom:28px; z-index:20; height:62px; display:flex; padding:5px; box-sizing:border-box; border-radius:999px; animation:toastIn .25s; background:color-mix(in srgb, var(--color-bg) 58%, transparent); backdrop-filter:blur(20px) saturate(1.7); -webkit-backdrop-filter:blur(20px) saturate(1.7); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">
+          <sc-for list="{{ selectActions }}" as="a">
+            <button onClick="{{ a.onTap }}" style="all:unset; cursor:pointer; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; border-radius:999px; color:{{ a.color }}" style-hover="background:color-mix(in srgb, var(--color-accent) 10%, transparent)">
+              <span style="display:flex; font-size:21px">{{ a.icon }}</span>
+              <span style="font-size:11px; font-weight:700">{{ a.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ dragging }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; left:0; top:0; z-index:45; width:210px; pointer-events:none; display:flex; flex-direction:column; gap:6px; transform:{{ ghostTransform }}">
+          <div style="display:flex; gap:10px; align-items:center; padding:8px 12px 8px 8px; border-radius:20px; background:var(--color-bg); box-shadow:var(--shadow-lg); transform:rotate(-3deg)">
+            <span style="flex:none; position:relative; width:64px; height:36px; border-radius:10px; overflow:hidden; background:{{ gv.thumb }}"><span style="position:absolute; width:40px; height:40px; border-radius:50%; right:-10px; bottom:-18px; background:{{ gv.blob }}; opacity:.6"></span></span>
+            <span style="font-size:12.5px; font-weight:700; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden">{{ gv.title }}</span>
+          </div>
+          <sc-if value="{{ dragHasTarget }}">
+            <span style="align-self:flex-start; margin-left:14px; padding:4px 11px; border-radius:999px; font-size:12px; font-weight:700; background:var(--color-accent); color:var(--color-bg); box-shadow:var(--shadow-md)">Move to {{ dragTargetName }}</span>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeMenu }}" style="position:absolute; inset:0; z-index:55; display:flex; flex-direction:column; justify-content:center; gap:12px; padding:0 22px; animation:fadeIn .18s; background:color-mix(in srgb, var(--color-neutral-900) 18%, transparent); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px)">
+          <div style="border-radius:30px; overflow:hidden; background:var(--color-bg); box-shadow:var(--shadow-lg); animation:popIn .25s cubic-bezier(.2,.9,.3,1.15)">
+            <div style="position:relative; aspect-ratio:16/9; overflow:hidden; background:{{ mv.thumb }}">
+              <div style="position:absolute; width:220px; height:220px; border-radius:50%; right:-50px; bottom:-90px; background:{{ mv.blob }}; opacity:.6"></div>
+            </div>
+            <div style="padding:14px 18px 16px">
+              <div style="font-size:16px; font-weight:700; line-height:1.3">{{ mv.title }}</div>
+              <div style="font-size:13px; color:var(--color-neutral-700)">{{ mv.meta }}</div>
+            </div>
+          </div>
+          <div style="width:260px; padding:6px; border-radius:26px; transform-origin:top left; animation:popIn .25s cubic-bezier(.2,.9,.3,1.15); background:color-mix(in srgb, var(--color-bg) 80%, transparent); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); box-shadow:var(--shadow-lg)">
+            <sc-for list="{{ menuItems }}" as="m">
+              <button onClick="{{ m.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; justify-content:space-between; width:100%; height:46px; padding:0 16px; border-radius:20px; box-sizing:border-box; font-size:15.5px; font-weight:600; color:{{ m.color }}" style-hover="background:color-mix(in srgb, var(--color-accent) 12%, transparent)">
+                {{ m.label }}<span style="display:flex; font-size:18px">{{ m.icon }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px; font-weight:600; color:var(--color-neutral-800); padding-left:8px">Tip: keep holding and drag to drop it into a folder</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ playerOpen }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Player" style="position:absolute; inset:0; z-index:50; overflow-y:auto; scrollbar-width:none; background:var(--color-bg); animation:sheetUp .38s cubic-bezier(.2,.9,.25,1); padding:58px 0 48px; box-sizing:border-box">
+          <div style="display:flex; justify-content:space-between; padding:0 16px 10px">
+            <button onClick="{{ closePlayer }}" aria-label="Close" style="all:unset; cursor:pointer; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; background:color-mix(in srgb, var(--color-bg) 58%, transparent); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">{{ I.chevD }}</button>
+            <button onClick="{{ playerMore }}" aria-label="More" style="all:unset; cursor:pointer; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; background:color-mix(in srgb, var(--color-bg) 58%, transparent); border:1px solid color-mix(in srgb, var(--color-accent-100) 85%, transparent); box-shadow:var(--shadow-md)">{{ I.more }}</button>
+          </div>
+          <div onClick="{{ togglePlay }}" style="position:relative; margin:0 12px; aspect-ratio:16/9; border-radius:26px; overflow:hidden; cursor:pointer; background:{{ pv.thumb }}">
+            <div style="position:absolute; width:260px; height:260px; border-radius:50%; right:-60px; bottom:-110px; background:{{ pv.blob }}; opacity:.6"></div>
+            <div style="position:absolute; left:14px; top:12px; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--color-neutral-800); opacity:.6">YouTube player</div>
+            <div style="position:absolute; left:50%; top:50%; width:68px; height:68px; margin:-34px 0 0 -34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--color-text); background:color-mix(in srgb, var(--color-bg) 70%, transparent); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:var(--shadow-md); opacity:{{ playBtnOpacity }}; transition:opacity .3s">
+              <sc-if value="{{ playing }}">{{ I.pause }}</sc-if>
+              <sc-if value="{{ notPlaying }}"><span style="display:flex; padding-left:4px">{{ I.play }}</span></sc-if>
+            </div>
+            <div style="position:absolute; left:14px; right:14px; bottom:12px; height:5px; border-radius:999px; background:color-mix(in srgb, var(--color-bg) 55%, transparent); overflow:hidden">
+              <div style="height:100%; border-radius:999px; background:var(--color-accent); width:{{ progressPct }}"></div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 26px 0; font-size:12px; font-weight:700; color:var(--color-neutral-600)"><span>{{ elapsed }}</span><span>{{ pv.dur }}</span></div>
+          <div style="padding:14px 20px 0; display:flex; flex-direction:column; gap:16px">
+            <div>
+              <h3 style="margin:0 0 4px; font-size:24px; text-wrap:pretty">{{ pv.title }}</h3>
+              <div style="font-size:14px; color:var(--color-neutral-700)">{{ pv.channel }}</div>
+            </div>
+            <button onClick="{{ playerMove }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:12px; padding:12px 14px 12px 12px; border-radius:22px; background:var(--color-surface)" style-hover="background:var(--color-neutral-300)">
+              <span style="flex:none; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; background:{{ pv.folderBg }}; color:{{ pv.folderIcon }}">{{ I.folderFill }}</span>
+              <span style="flex:1; min-width:0; display:flex; flex-direction:column">
+                <span style="font-size:12px; font-weight:700; color:var(--color-neutral-600)">Folder</span>
+                <span style="font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ pv.path }}</span>
+              </span>
+              <span style="font-size:14px; font-weight:700; color:var(--color-accent-700)">Move</span>
+            </button>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center">
+              <sc-for list="{{ pv.tags }}" as="t">
+                <button onClick="{{ t.onTap }}" style="all:unset; cursor:pointer; padding:7px 14px; border-radius:999px; font-size:13.5px; font-weight:600; background:var(--color-accent-2-200); color:var(--color-accent-2-800)" style-hover="background:var(--color-accent-2-300)">{{ t.name }}</button>
+              </sc-for>
+              <button onClick="{{ playerTags }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:4px; padding:6px 13px; border-radius:999px; font-size:13.5px; font-weight:700; border:1.5px dashed var(--color-neutral-400); color:var(--color-neutral-700)" style-hover="border-color:var(--color-accent-400); color:var(--color-accent-700)"><span style="display:flex; font-size:14px">{{ I.plus }}</span>Tag</button>
+            </div>
+            <p style="margin:0; font-size:15px; line-height:1.55; color:var(--color-neutral-800); text-wrap:pretty">{{ pv.desc }}</p>
+            <div data-screen-label="Notes" style="display:flex; flex-direction:column; gap:10px; padding:14px 14px 12px; border-radius:var(--radius-lg); background:var(--color-accent-2-100)">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                <div style="display:flex; align-items:center; gap:8px">
+                  <span style="display:flex; font-size:17px; color:var(--color-accent-2-700)">{{ I.note }}</span>
+                  <h5 style="margin:0; color:var(--color-accent-2-900)">My notes</h5>
+                </div>
+                <span style="font-size:12px; font-weight:600; color:var(--color-accent-2-700)">{{ notesStatus }}</span>
+              </div>
+              <textarea value="{{ notes }}" onChange="{{ onNotes }}" placeholder="Jot down ingredients, measurements, ideas…" rows="5" style="width:100%; box-sizing:border-box; min-height:120px; resize:none; padding:12px 14px; border:2px solid transparent; border-radius:20px; background:var(--color-bg); font:inherit; font-size:15px; line-height:1.5; color:var(--color-text); outline:none" style-focus="border-color:var(--color-accent-2-400)"></textarea>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                <button onClick="{{ addStamp }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:6px; height:36px; padding:0 14px 0 11px; border-radius:999px; font-size:13.5px; font-weight:700; background:var(--color-accent-2-200); color:var(--color-accent-2-800)" style-hover="background:var(--color-accent-2-300)" style-active="background:var(--color-accent-2-400)">
+                  <span style="display:flex; font-size:14px">{{ I.clock }}</span>Add {{ elapsed }}
+                </button>
+                <span style="font-size:12px; color:var(--color-accent-2-700)">{{ notesCount }}</span>
+              </div>
+            </div>
+            <sc-if value="{{ hasMore }}">
+              <div style="display:flex; flex-direction:column; gap:4px; padding-top:6px">
+                <h5 style="margin:0 0 6px">{{ moreTitle }}</h5>
+                <sc-for list="{{ moreItems }}" as="m">
+                  <button onClick="{{ m.onTap }}" style="all:unset; cursor:pointer; display:flex; gap:12px; align-items:center; padding:8px; margin:0 -8px; border-radius:18px" style-hover="background:var(--color-surface)">
+                    <span style="flex:none; position:relative; width:96px; height:54px; border-radius:13px; overflow:hidden; background:{{ m.thumb }}"><span style="position:absolute; width:60px; height:60px; border-radius:50%; right:-16px; bottom:-26px; background:{{ m.blob }}; opacity:.6"></span></span>
+                    <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                      <span style="font-size:14px; font-weight:700; line-height:1.3">{{ m.title }}</span>
+                      <span style="font-size:12px; color:var(--color-neutral-700)">{{ m.meta }}</span>
+                    </span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ shareBg }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="YouTube app (share)" style="position:absolute; inset:0; z-index:58; background:var(--color-neutral-900); padding:64px 0 0; box-sizing:border-box">
+          <div style="aspect-ratio:16/9; background:var(--color-neutral-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--color-neutral-400)">YouTube app</div>
+          <div style="padding:16px; display:flex; flex-direction:column; gap:8px">
+            <span style="height:14px; width:80%; border-radius:999px; background:var(--color-neutral-700)"></span>
+            <span style="height:14px; width:55%; border-radius:999px; background:var(--color-neutral-700)"></span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeSheet }}" style="position:absolute; inset:0; z-index:60; background:color-mix(in srgb, var(--color-neutral-900) 32%, transparent); animation:fadeIn .25s"></div>
+        <div data-screen-label="Sheet" style="position:absolute; left:6px; right:6px; bottom:6px; z-index:61; max-height:calc(100% - 64px); display:flex; flex-direction:column; border-radius:48px; overflow:hidden; background:var(--color-bg); box-shadow:var(--shadow-lg); animation:sheetUp .36s cubic-bezier(.2,.9,.25,1)">
+          <div style="display:flex; justify-content:center; padding-top:8px"><span style="width:38px; height:5px; border-radius:999px; background:var(--color-neutral-400)"></span></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 16px 6px">
+            <button onClick="{{ closeSheet }}" aria-label="Cancel" style="all:unset; cursor:pointer; flex:none; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; background:var(--color-surface)" style-hover="background:var(--color-neutral-300)">{{ I.x }}</button>
+            <div style="flex:1; text-align:center; font-family:var(--font-heading); font-size:19px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ sheetTitle }}</div>
+            <button onClick="{{ confirmSheet }}" style="all:unset; cursor:pointer; flex:none; height:44px; min-width:44px; padding:0 18px; box-sizing:border-box; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; background:var(--color-accent); color:var(--color-bg); opacity:{{ confirmOpacity }}" style-hover="background:var(--color-accent-600)">{{ confirmLabel }}</button>
+          </div>
+          <div style="flex:1; min-height:0; overflow-y:auto; scrollbar-width:none; padding:10px 20px 30px; display:flex; flex-direction:column; gap:14px">
+
+            <sc-if value="{{ isAddSheet }}">
+              <sc-if value="{{ addShowUrl }}">
+                <label style="display:flex; align-items:center; gap:10px; height:52px; padding:0 6px 0 16px; border-radius:999px; background:var(--color-surface)">
+                  <span style="display:flex; font-size:18px; color:var(--color-neutral-600)">{{ I.link }}</span>
+                  <input value="{{ addUrl }}" onChange="{{ onAddUrl }}" placeholder="YouTube link" style="flex:1; min-width:0; border:0; background:transparent; font:inherit; font-size:15.5px; outline:none; color:var(--color-text)">
+                  <sc-if value="{{ addCanPaste }}">
+                    <button onClick="{{ pasteUrl }}" style="all:unset; cursor:pointer; height:40px; padding:0 16px; border-radius:999px; font-size:14px; font-weight:700; background:var(--color-accent-200); color:var(--color-accent-800)" style-hover="background:var(--color-accent-300)">Paste</button>
+                  </sc-if>
+                </label>
+              </sc-if>
+              <sc-if value="{{ addLoading }}">
+                <div style="display:flex; gap:12px; align-items:center; padding:12px; border-radius:22px; background:var(--color-surface); animation:fadeIn .2s">
+                  <span style="width:112px; height:63px; border-radius:14px; background:var(--color-neutral-300)"></span>
+                  <span style="font-size:14px; font-weight:600; color:var(--color-neutral-700)">Fetching video details…</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ addFetched }}">
+                <div style="display:flex; gap:12px; align-items:center; padding:12px; border-radius:22px; background:var(--color-surface); animation:popIn .25s">
+                  <span style="flex:none; position:relative; width:112px; height:63px; border-radius:14px; overflow:hidden; background:var(--color-accent-300)"><span style="position:absolute; width:70px; height:70px; border-radius:50%; right:-18px; bottom:-30px; background:var(--color-accent-500); opacity:.6"></span></span>
+                  <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                    <span style="font-size:14.5px; font-weight:700; line-height:1.3">{{ addVideo.title }}</span>
+                    <span style="font-size:12.5px; color:var(--color-neutral-700)">{{ addVideo.meta }}</span>
+                  </span>
+                </div>
+              </sc-if>
+              <h5 style="margin:6px 0 -6px">Save to</h5>
+            </sc-if>
+
+            <sc-if value="{{ isMoveSheet }}">
+              <div style="font-size:14px; color:var(--color-neutral-700); margin-top:-4px">{{ moveSub }}</div>
+            </sc-if>
+
+            <sc-if value="{{ showPicker }}">
+              <div style="display:flex; flex-direction:column; gap:2px">
+                <sc-for list="{{ treeRows }}" as="r">
+                  <button onClick="{{ r.onTap }}" style="all:unset; cursor:pointer; box-sizing:border-box; display:flex; align-items:center; gap:10px; min-height:48px; padding:4px 12px 4px 0; padding-left:{{ r.padL }}; border-radius:18px; background:{{ r.bg }}" style-hover="background:var(--color-surface)">
+                    <sc-if value="{{ r.showGuide }}"><span style="width:2px; height:18px; margin-right:2px; border-radius:2px; background:var(--color-neutral-300)"></span></sc-if>
+                    <span style="display:flex; font-size:19px; color:{{ r.iconColor }}">{{ r.icon }}</span>
+                    <span style="flex:1; font-size:15.5px; font-weight:{{ r.weight }}">{{ r.name }}</span>
+                    <sc-if value="{{ r.isCurrent }}"><span style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--color-neutral-200); color:var(--color-neutral-700)">Current</span></sc-if>
+                    <span style="flex:none; width:24px; height:24px; border-radius:50%; box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-size:13px; border:2px solid {{ r.ring }}; background:{{ r.fill }}; color:var(--color-bg)"><sc-if value="{{ r.selected }}">{{ I.check }}</sc-if></span>
+                  </button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ treeCreating }}">
+                <div style="display:flex; align-items:center; gap:8px; height:52px; padding:0 6px 0 14px; border-radius:999px; background:var(--color-surface); animation:popIn .2s">
+                  <span style="display:flex; font-size:19px; color:var(--color-accent-600)">{{ I.folderPlus }}</span>
+                  <input ref="{{ inlineRef }}" value="{{ inlineName }}" onChange="{{ onInlineName }}" onKeyDown="{{ onInlineKey }}" placeholder="{{ inlinePlaceholder }}" style="flex:1; min-width:0; border:0; background:transparent; font:inherit; font-size:15.5px; outline:none; color:var(--color-text)">
+                  <button onClick="{{ createInline }}" style="all:unset; cursor:pointer; height:40px; padding:0 16px; border-radius:999px; font-size:14px; font-weight:700; background:var(--color-accent-2-500); color:var(--color-bg)">Add</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ treeShowNewBtn }}">
+                <button onClick="{{ startInline }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:10px; height:48px; padding:0 14px; border-radius:999px; border:2px dashed var(--color-neutral-400); font-size:14.5px; font-weight:700; color:var(--color-neutral-700); box-sizing:border-box" style-hover="border-color:var(--color-accent-400); color:var(--color-accent-700)">
+                  <span style="display:flex; font-size:18px">{{ I.folderPlus }}</span>{{ treeNewLabel }}
+                </button>
+              </sc-if>
+              <sc-if value="{{ treeMaxDepth }}">
+                <div style="font-size:13px; font-weight:600; padding:0 6px; color:var(--color-accent-2-700)">{{ treeMaxNote }}</div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isAddSheet }}">
+              <h5 style="margin:8px 0 -4px">Tags</h5>
+              <div style="display:flex; flex-wrap:wrap; gap:8px">
+                <sc-for list="{{ addTagChips }}" as="t">
+                  <button onClick="{{ t.onTap }}" style="all:unset; cursor:pointer; padding:7px 14px; border-radius:999px; font-size:13.5px; font-weight:600; background:{{ t.bg }}; color:{{ t.fg }}">{{ t.name }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isTagSheet }}">
+              <div style="display:flex; flex-direction:column; gap:10px">
+                <div style="font-size:13px; font-weight:700; color:var(--color-neutral-600)">{{ tagSheetLabel }}</div>
+                <div style="display:flex; flex-wrap:wrap; gap:8px; min-height:34px">
+                  <sc-for list="{{ tagCurrent }}" as="t">
+                    <button onClick="{{ t.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:6px; padding:7px 10px 7px 14px; border-radius:999px; font-size:14px; font-weight:700; background:var(--color-accent-2-500); color:var(--color-bg); animation:popIn .2s" style-hover="background:var(--color-accent-2-600)">{{ t.name }}<span style="display:flex; font-size:12px; opacity:.85">{{ I.x }}</span></button>
+                  </sc-for>
+                  <sc-if value="{{ tagNoneYet }}"><span style="font-size:14px; color:var(--color-neutral-600); line-height:34px">No tags yet</span></sc-if>
+                </div>
+              </div>
+              <label style="display:flex; align-items:center; gap:10px; height:52px; padding:0 16px; border-radius:999px; background:var(--color-surface)">
+                <span style="display:flex; font-size:17px; color:var(--color-neutral-600)">{{ I.tag }}</span>
+                <input value="{{ tagInput }}" onChange="{{ onTagInput }}" onKeyDown="{{ onTagKey }}" placeholder="Find or create a tag" style="flex:1; min-width:0; border:0; background:transparent; font:inherit; font-size:15.5px; outline:none; color:var(--color-text)">
+              </label>
+              <sc-if value="{{ showCreateTag }}">
+                <button onClick="{{ createTag }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:10px; height:48px; padding:0 16px; border-radius:999px; background:var(--color-accent-200); color:var(--color-accent-800); font-size:15px; font-weight:700" style-hover="background:var(--color-accent-300)">
+                  <span style="display:flex; font-size:17px">{{ I.plus }}</span>Create “{{ tagInputTrim }}”
+                </button>
+              </sc-if>
+              <div style="font-size:13px; font-weight:700; color:var(--color-neutral-600); margin-top:4px">{{ tagSuggestLabel }}</div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px">
+                <sc-for list="{{ tagSuggest }}" as="t">
+                  <button onClick="{{ t.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:5px; padding:7px 14px 7px 10px; border-radius:999px; font-size:14px; font-weight:600; background:var(--color-surface)" style-hover="background:var(--color-accent-2-200); color:var(--color-accent-2-800)"><span style="display:flex; font-size:12px; color:var(--color-neutral-500)">{{ I.plus }}</span>{{ t.name }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isFolderSheet }}">
+              <input ref="{{ folderNameRef }}" value="{{ folderName }}" onChange="{{ onFolderName }}" onKeyDown="{{ onFolderKey }}" placeholder="Folder name" style="height:58px; padding:0 20px; border:2px solid var(--color-accent-300); border-radius:999px; background:var(--color-bg); font-family:var(--font-heading); font-size:20px; outline:none; color:var(--color-text); box-sizing:border-box; width:100%">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
+                <h5 style="margin:0">Inside</h5>
+                <span style="display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--color-accent-2-700)">
+                  <span style="display:flex; gap:3px"><sc-for list="{{ folderLevelDots }}" as="d"><span style="width:7px; height:7px; border-radius:50%; background:{{ d.bg }}"></span></sc-for></span>{{ folderLevelText }}
+                </span>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px">
+                <sc-for list="{{ parentOptions }}" as="p">
+                  <button onClick="{{ p.onTap }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:6px; padding:8px 14px 8px 11px; border-radius:999px; font-size:13.5px; font-weight:700; background:{{ p.bg }}; color:{{ p.fg }}"><span style="display:flex; font-size:14px">{{ p.icon }}</span>{{ p.label }}</button>
+                </sc-for>
+              </div>
+              <div style="font-size:13px; color:var(--color-neutral-600)">Folders nest up to three levels deep.</div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ toastOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; left:50%; bottom:100px; transform:translateX(-50%); z-index:70; max-width:360px; display:flex; align-items:center; gap:14px; padding:8px 8px 8px 18px; border-radius:999px; background:var(--color-neutral-900); color:var(--color-bg); box-shadow:var(--shadow-lg); animation:toastIn .25s; white-space:nowrap">
+          <span style="display:flex; font-size:16px; color:var(--color-accent-2-300)">{{ I.check }}</span>
+          <span style="font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis">{{ toastMsg }}</span>
+          <sc-if value="{{ toastUndo }}">
+            <button onClick="{{ undo }}" style="all:unset; cursor:pointer; padding:7px 14px; border-radius:999px; font-size:14px; font-weight:700; color:var(--color-accent-300)" style-hover="background:color-mix(in srgb, var(--color-bg) 12%, transparent)">Undo</button>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute; left:50%; bottom:8px; width:138px; height:5px; margin-left:-69px; border-radius:999px; z-index:90; pointer-events:none; background:{{ homeInk }}"></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;homeLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Grid&quot;,&quot;List&quot;,&quot;Tree&quot;,&quot;Columns&quot;],&quot;default&quot;:&quot;Grid&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Library&quot;,&quot;Folder&quot;,&quot;Search&quot;,&quot;Player&quot;,&quot;Settings&quot;,&quot;NewFolder&quot;,&quot;Move&quot;,&quot;TagEditor&quot;,&quot;Drag&quot;,&quot;Share&quot;,&quot;Add&quot;],&quot;default&quot;:&quot;Library&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;frameOnly&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;longPressMs&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:200,&quot;max&quot;:1000,&quot;step&quot;:50,&quot;unit&quot;:&quot;ms&quot;,&quot;default&quot;:450,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  state = this.initState();
+  scrollRef = React.createRef();
+  screenRef = React.createRef();
+  searchRef = React.createRef();
+  colRef = React.createRef();
+  inlineRef = React.createRef();
+  folderNameRef = React.createRef();
+
+  initState() {
+    const F = [
+      { id: 'f1', name: 'Cooking', parent: null, tone: 'a' },
+      { id: 'f2', name: 'Pasta', parent: 'f1' },
+      { id: 'f3', name: 'Weeknight', parent: 'f2' },
+      { id: 'f4', name: 'Baking', parent: 'f1' },
+      { id: 'f5', name: 'Woodworking', parent: null, tone: 'b' },
+      { id: 'f6', name: 'Joinery', parent: 'f5' },
+      { id: 'f7', name: 'Learning', parent: null, tone: 'n' },
+      { id: 'f8', name: 'Design', parent: 'f7' },
+      { id: 'f9', name: 'Typography', parent: 'f8' },
+      { id: 'f10', name: 'Music theory', parent: 'f7' },
+    ];
+    const v = (id, title, channel, dur, desc, tags, folder, notes) => ({ id, title, channel, dur, desc, tags, folder, notes: notes || '' });
+    const V = [
+      v('v1', 'Cacio e pepe, the foolproof way', "Nonna's Table", '12:48', 'Emulsify pecorino and starchy pasta water without a single clump. Temperature is everything — take the pan off the heat before the cheese goes in.', ['pasta', 'italian', 'quick'], 'f2', '[3:40] Pull pan off heat before adding cheese\n[7:15] Ratio: 100g pecorino per 200g spaghetti'),
+      v('v2', 'Fresh egg pasta by hand', 'Flour & Fold', '18:02', 'A well of flour, three eggs and a fork. Kneading the dough, resting it, and rolling sheets thin enough to read through.', ['pasta', 'technique'], 'f2'),
+      v('v3', '20-minute lemon ricotta rigatoni', "Nonna's Table", '9:15', 'Bright, creamy and on the table before the rice would be done. Zest goes in last.', ['pasta', 'quick'], 'f3'),
+      v('v4', 'Sourdough starter from zero', 'Crumb Lab', '22:40', 'Day-by-day feeding schedule, what the bubbles mean, and how to tell your starter is ready to raise a dough.', ['bread', 'fermentation'], 'f4'),
+      v('v5', 'Laminated dough without the stress', 'Crumb Lab', '31:05', 'Butter blocks, letter folds and keeping everything cold. Croissant dough for people with warm kitchens.', ['pastry', 'technique'], 'f4'),
+      v('v6', 'Hand-cut dovetails for beginners', 'Shavings', '27:30', 'Tails first, marking with a knife, and sawing to the line. No jigs, just a saw, chisel and patience.', ['joinery', 'hand tools', 'beginner'], 'f6'),
+      v('v7', 'Sharpening chisels in ten minutes', 'Shavings', '10:12', 'Flattening the back, a honing guide, and the micro-bevel trick that keeps an edge keen for weeks.', ['hand tools', 'sharpening'], 'f5'),
+      v('v8', 'Mortise and tenon, three ways', 'Oak & Iron', '16:44', 'Chopped by hand, drilled and pared, and routed. Which joint to choose for chairs, tables and frames.', ['joinery'], 'f6'),
+      v('v9', 'Why kerning matters more than you think', 'Letterform', '14:20', 'Optical spacing, the classic problem pairs, and training your eye by flipping words upside down.', ['typography', 'design'], 'f9'),
+      v('v10', 'Grid systems, explained with paper', 'Studio Margins', '19:58', 'Columns, gutters and baseline rhythm demonstrated with scissors and a sheet of A4.', ['layout', 'design'], 'f8'),
+      v('v11', 'Modes in twelve minutes', 'Chord Garden', '12:03', 'Ionian to Locrian, heard rather than memorised. Each mode played over the same drone.', ['music', 'theory'], 'f10'),
+      v('v12', 'Building a cutting board from offcuts', 'Oak & Iron', '21:18', 'Glue-up strategy, flattening an end-grain board, and a food-safe oil finish.', ['project', 'beginner'], null),
+      v('v13', 'Proofing basics: under vs over', 'Crumb Lab', '8:47', 'The poke test, what an over-proofed dough looks like inside, and rescuing a slack loaf.', ['bread'], null),
+      v('v14', 'Colour theory for interface designers', 'Studio Margins', '24:10', 'Building palettes with perceptual lightness, checking contrast, and choosing an accent that holds up.', ['color', 'design'], null),
+    ];
+    const st = this.props.startScreen || 'Library';
+    const shareFetched = { title: 'Knife skills: the five cuts that matter', channel: "Nonna's Table", dur: '15:32', desc: 'Dice, mince, julienne, chiffonade and the rock chop — slowly first, then at speed.' };
+    const sheets = {
+      NewFolder: { type: 'folder', parent: 'f1', name: 'Braises' },
+      Move: { type: 'move', ids: ['v12'], current: null, target: 'f5', creating: false, newName: '' },
+      TagEditor: { type: 'tags', ids: ['v1'], input: '' },
+      Share: { type: 'add', share: true, url: 'https://youtu.be/kN1fe7xQ2pA', fetched: shareFetched, loading: false, target: 'f1', tags: ['quick'], creating: false, newName: '' },
+      Add: { type: 'add', url: '', fetched: null, loading: false, target: null, tags: [], creating: false, newName: '' },
+    };
+    return {
+      tab: st === 'Search' ? 'search' : st === 'Settings' ? 'settings' : 'library',
+      path: st === 'Folder' ? ['f1', 'f2'] : [],
+      colPath: (this.props.homeLayout === 'Columns' && st !== 'Library') ? [] : (this.props.homeLayout === 'Columns' ? ['f1', 'f2'] : []),
+      expanded: { f1: true, f2: true },
+      tagView: null, tagFrom: 'search', scrolled: false, selecting: false, selected: [], pressing: null,
+      query: st === 'Search' ? 'dough' : '', scope: 'all', recent: ['sourdough', 'dovetail', 'kerning'],
+      folders: F, videos: V, layout: null, theme: 'System',
+      player: st === 'Player' ? 'v1' : null, playing: false, progress: 0.32,
+      sheet: sheets[st] || null, menu: null, addMenu: false, toast: null,
+      drag: st === 'Drag' ? { id: 'v13', x: 120, y: 262, moved: true, over: 'f1' } : null,
+    };
+  }
+
+  componentDidMount() {
+    this._tick = setInterval(() => {
+      const s = this.state;
+      if (s.playing && s.player) { const p = s.progress + 0.0025; this.setState(p >= 1 ? { progress: 1, playing: false } : { progress: p }); }
+    }, 100);
+  }
+  componentWillUnmount() { clearInterval(this._tick); clearTimeout(this._toastT); clearTimeout(this._lp); }
+  componentDidUpdate(pp, ps) {
+    const k = s => s.tab + s.path.join('/') + (s.tagView || '');
+    if (k(ps) !== k(this.state) && this.scrollRef.current) this.scrollRef.current.scrollTop = 0;
+    if (this.state.tab === 'search' && ps.tab !== 'search') setTimeout(() => this.searchRef.current && this.searchRef.current.focus(), 60);
+    if (ps.colPath.length !== this.state.colPath.length && this.colRef.current) setTimeout(() => { const c = this.colRef.current; if (c) c.scrollLeft = c.scrollWidth; }, 30);
+    const sh = this.state.sheet, psh = ps.sheet;
+    if (sh && sh.creating && !(psh && psh.creating)) setTimeout(() => this.inlineRef.current && this.inlineRef.current.focus(), 50);
+    if (sh && sh.type === 'folder' && !(psh && psh.type === 'folder') && this.props.startScreen !== 'NewFolder') setTimeout(() => this.folderNameRef.current && this.folderNameRef.current.focus(), 350);
+  }
+
+  icons() {
+    if (this._I) return this._I;
+    const h = React.createElement;
+    const mk = (parts, fill) => h('svg', { width: '1em', height: '1em', viewBox: '0 0 24 24', fill: fill ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 2.75, strokeLinecap: 'round', strokeLinejoin: 'round', style: { display: 'block' } },
+      ...parts.map((p, i) => { if (p.startsWith('c:')) { const [cx, cy, r] = p.slice(2).split(','); return h('circle', { key: i, cx, cy, r }); } return h('path', { key: i, d: p }); }));
+    const folder = 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z';
+    this._I = {
+      folder: mk([folder]), folderFill: mk([folder], true), folderPlus: mk([folder, 'M12 10v6', 'M9 13h6']),
+      folderInput: mk(['M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1', 'M2 13h10', 'm9 16 3-3-3-3']),
+      plus: mk(['M5 12h14', 'M12 5v14']), search: mk(['c:11,11,8', 'm21 21-4.3-4.3']),
+      tag: mk(['M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z', 'c:7.5,7.5,.5']),
+      chevL: mk(['m15 18-6-6 6-6']), chevR: mk(['m9 18 6-6-6-6']), chevD: mk(['m6 9 6 6 6-6']),
+      x: mk(['M18 6 6 18', 'm6 6 12 12']), check: mk(['M20 6 9 17l-5-5']), more: mk(['c:12,12,1', 'c:19,12,1', 'c:5,12,1']),
+      play: mk(['M6 3l14 9-14 9z'], true), pause: mk(['M14 4h4v16h-4z', 'M6 4h4v16H6z'], true),
+      trash: mk(['M3 6h18', 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6', 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2']),
+      link: mk(['M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71', 'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71']),
+      clock: mk(['c:12,12,10', 'M12 6v6l4 2']),
+      inbox: mk(['M22 12h-6l-2 3h-4l-2-3H2', 'M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z']),
+      library: mk(['m16 6 4 14', 'M12 6v14', 'M8 8v12', 'M4 4v16']),
+      layers: mk(['m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z', 'm22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65', 'm22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65']),
+      circleCheck: mk(['c:12,12,10', 'm9 12 2 2 4-4']),
+      note: mk(['M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4', 'M2 6h4', 'M2 10h4', 'M2 14h4', 'M2 18h4', 'M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z']),
+      gear: mk(['M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z', 'c:12,12,3']),
+      sun: mk(['c:12,12,4', 'M12 2v2', 'M12 20v2', 'm4.93 4.93 1.41 1.41', 'm17.66 17.66 1.41 1.41', 'M2 12h2', 'M20 12h2', 'm6.34 17.66-1.41 1.41', 'm19.07 4.93-1.41 1.41']),
+      grid: mk(['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M14 14h7v7h-7z', 'M3 14h7v7H3z']),
+      download: mk(['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm7 10 5 5 5-5', 'M12 15V3']),
+      upload: mk(['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm17 8-5-5-5 5', 'M12 3v12']),
+      share: mk(['M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8', 'm16 6-4-4-4 4', 'M12 2v13']),
+    };
+    return this._I;
+  }
+
+  fb = id => this.state.folders.find(f => f.id === id);
+  depth = id => { let d = 0; while (id) { d++; id = this.fb(id)?.parent; } return d; };
+  chain = id => { const a = []; while (id) { const f = this.fb(id); if (!f) break; a.unshift(f); id = f.parent; } return a; };
+  pathStr = id => id ? this.chain(id).map(f => f.name).join(' › ') : 'Inbox';
+  kids = pid => this.state.folders.filter(f => f.parent === pid);
+  descIds = id => [id, ...this.kids(id).flatMap(k => this.descIds(k.id))];
+  tone = id => {
+    const T = {
+      a: { bg: 'var(--color-accent-200)', blob: 'var(--color-accent-300)', icon: 'var(--color-accent-600)', ink: 'var(--color-accent-900)' },
+      b: { bg: 'var(--color-accent-2-200)', blob: 'var(--color-accent-2-300)', icon: 'var(--color-accent-2-600)', ink: 'var(--color-accent-2-900)' },
+      n: { bg: 'var(--color-neutral-200)', blob: 'var(--color-neutral-300)', icon: 'var(--color-neutral-600)', ink: 'var(--color-neutral-900)' },
+    };
+    const r = this.chain(id)[0]; return T[(r && r.tone) || 'n'];
+  };
+  pal = ch => {
+    const P = [['var(--color-accent-300)', 'var(--color-accent-500)'], ['var(--color-accent-2-300)', 'var(--color-accent-2-500)'], ['var(--color-neutral-300)', 'var(--color-neutral-500)'], ['var(--color-accent-200)', 'var(--color-accent-400)'], ['var(--color-accent-2-200)', 'var(--color-accent-2-400)']];
+    let h = 0; for (const c of ch) h = (h * 31 + c.charCodeAt(0)) % 997; return P[h % P.length];
+  };
+  allTags = () => { const m = {}; this.state.videos.forEach(v => v.tags.forEach(t => m[t] = (m[t] || 0) + 1)); return Object.entries(m).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])); };
+  hl = (text, q) => {
+    if (!q) return [{ t: text, bg: 'transparent' }];
+    const out = [], lo = text.toLowerCase(); let i = 0;
+    while (i < text.length) { const j = lo.indexOf(q, i); if (j < 0) { out.push({ t: text.slice(i), bg: 'transparent' }); break; } if (j > i) out.push({ t: text.slice(i, j), bg: 'transparent' }); out.push({ t: text.slice(j, j + q.length), bg: 'var(--color-accent-200)' }); i = j + q.length; }
+    return out;
+  };
+  secs = d => d.split(':').reduce((a, b) => a * 60 + +b, 0);
+  fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  layout = () => this.state.layout || this.props.homeLayout || 'Grid';
+  curFolder = () => {
+    const s = this.state; if (s.tab !== 'library') return null;
+    if (s.path.length) return s.path[s.path.length - 1];
+    if (this.layout() === 'Columns' && s.colPath.length) return s.colPath[s.colPath.length - 1];
+    return null;
+  };
+
+  showToast = (msg, snap) => { clearTimeout(this._toastT); this.setState({ toast: { msg, snap } }); this._toastT = setTimeout(() => this.setState({ toast: null }), 4000); };
+  undo = () => { const t = this.state.toast; if (t && t.snap) this.setState({ ...t.snap, toast: null }); };
+  snap = () => ({ videos: this.state.videos, folders: this.state.folders });
+  openFolder = id => this.setState(s => ({ path: [...s.path, id], scrolled: false, addMenu: false }));
+  openPath = id => this.setState({ path: this.chain(id).map(f => f.id), scrolled: false });
+  goBack = () => this.setState(s => {
+    if (s.tagView) return s.tagFrom === 'player' ? { tagView: null, tab: 'library' } : { tagView: null, tab: s.tagFrom };
+    if (s.tab === 'settings') return { tab: 'library' };
+    return { path: s.path.slice(0, -1), selecting: false };
+  });
+  goSearch = () => this.setState({ tab: 'search', selecting: false, addMenu: false, tagView: null });
+  closeSearch = () => this.setState({ tab: 'library', tagView: null });
+  openSettings = () => this.setState({ tab: 'settings', selecting: false, addMenu: false });
+  play = id => this.setState({ player: id, playing: true, progress: 0, menu: null });
+  closePlayer = () => this.setState({ player: null, playing: false });
+  togglePlay = () => this.setState(s => ({ playing: !s.playing, progress: s.progress >= 1 ? 0 : s.progress }));
+  startSelect = () => this.setState({ selecting: true, selected: [], addMenu: false });
+  endSelect = () => this.setState({ selecting: false, selected: [] });
+  toggleSel = id => this.setState(s => ({ selected: s.selected.includes(id) ? s.selected.filter(x => x !== id) : [...s.selected, id] }));
+  toggleAddMenu = () => this.setState(s => ({ addMenu: !s.addMenu }));
+  closeMenu = () => this.setState({ menu: null });
+  closeSheet = () => this.setState({ sheet: null });
+  openMove = ids => { const fs = [...new Set(ids.map(id => this.state.videos.find(v => v.id === id).folder))]; this.setState({ menu: null, sheet: { type: 'move', ids, target: fs.length === 1 ? fs[0] : null, current: fs.length === 1 ? fs[0] : undefined, creating: false, newName: '' } }); };
+  openTags = ids => this.setState({ menu: null, sheet: { type: 'tags', ids, input: '' } });
+  openFolderSheet = parent => this.setState({ addMenu: false, sheet: { type: 'folder', parent, name: '' } });
+  newRootFolder = () => this.openFolderSheet(null);
+  newSubFolder = () => this.openFolderSheet(this.curFolder());
+  openAdd = () => this.setState({ addMenu: false, sheet: { type: 'add', url: '', loading: false, fetched: null, target: this.curFolder(), tags: [], creating: false, newName: '' } });
+  openShare = () => this.setState({ sheet: { type: 'add', share: true, url: 'x', loading: false, fetched: { title: 'Knife skills: the five cuts that matter', channel: "Nonna's Table", dur: '15:32', desc: 'Dice, mince, julienne, chiffonade and the rock chop — slowly first, then at speed.' }, target: null, tags: [], creating: false, newName: '' } });
+  patchSheet = p => this.setState(s => ({ sheet: { ...s.sheet, ...p } }));
+  deleteVideos = ids => { const snap = this.snap(); this.setState(s => ({ videos: s.videos.filter(v => !ids.includes(v.id)), menu: null, selecting: false, selected: [], player: ids.includes(s.player) ? null : s.player })); this.showToast(ids.length > 1 ? `Deleted ${ids.length} videos` : 'Video deleted', snap); };
+  moveVideos = (ids, folder) => {
+    const snap = this.snap();
+    this.setState(s => ({ videos: s.videos.map(v => ids.includes(v.id) ? { ...v, folder } : v), sheet: null, selecting: false, selected: [] }));
+    this.showToast(`Moved ${ids.length > 1 ? ids.length + ' videos ' : ''}to ${folder ? this.fb(folder).name : 'Inbox'}`, snap);
+  };
+  addFolder = (name, parent) => {
+    const id = 'f' + Date.now(); const roots = this.kids(null).length;
+    this.setState(s => ({ folders: [...s.folders, { id, name, parent, ...(parent ? {} : { tone: ['a', 'b', 'n'][roots % 3] }) }], expanded: { ...s.expanded, ...(parent ? { [parent]: true } : {}) } }));
+    return id;
+  };
+  startInline = () => this.patchSheet({ creating: true, newName: '' });
+  onInlineName = e => this.patchSheet({ newName: e.target.value });
+  onInlineKey = e => { if (e.key === 'Enter') this.createInline(); if (e.key === 'Escape') this.patchSheet({ creating: false }); };
+  createInline = () => { const sh = this.state.sheet, n = (sh.newName || '').trim(); if (!n) return; const id = this.addFolder(n, sh.target); this.patchSheet({ target: id, creating: false, newName: '' }); };
+  addTagTo = (ids, t) => { t = t.trim().toLowerCase(); if (!t) return; this.setState(s => ({ videos: s.videos.map(v => ids.includes(v.id) && !v.tags.includes(t) ? { ...v, tags: [...v.tags, t] } : v), sheet: s.sheet ? { ...s.sheet, input: '' } : null })); };
+  removeTagFrom = (ids, t) => this.setState(s => ({ videos: s.videos.map(v => ids.includes(v.id) ? { ...v, tags: v.tags.filter(x => x !== t) } : v) }));
+  onTagInput = e => this.patchSheet({ input: e.target.value });
+  onTagKey = e => { if (e.key === 'Enter') this.addTagTo(this.state.sheet.ids, this.state.sheet.input); };
+  createTag = () => this.addTagTo(this.state.sheet.ids, this.state.sheet.input);
+  onAddUrl = e => { const url = e.target.value; this.patchSheet({ url }); if (/youtu/.test(url)) this.fetchVideo(); else this.patchSheet({ fetched: null }); };
+  pasteUrl = () => { this.patchSheet({ url: 'https://youtu.be/kN1fe7xQ2pA' }); this.fetchVideo(); };
+  fetchVideo = () => { this.patchSheet({ loading: true, fetched: null }); setTimeout(() => this.state.sheet && this.patchSheet({ loading: false, fetched: { title: 'Knife skills: the five cuts that matter', channel: "Nonna's Table", dur: '15:32', desc: 'Dice, mince, julienne, chiffonade and the rock chop — slowly first, then at speed. Plus how to keep a board from sliding.' } }), 700); };
+  onFolderName = e => this.patchSheet({ name: e.target.value });
+  onFolderKey = e => { if (e.key === 'Enter') this.confirmSheet(); };
+  confirmSheet = () => {
+    const sh = this.state.sheet; if (!sh) return;
+    if (sh.type === 'tags') return this.setState({ sheet: null });
+    if (sh.type === 'move') { if (sh.target === sh.current) return; return this.moveVideos(sh.ids, sh.target); }
+    if (sh.type === 'folder') { const n = sh.name.trim(); if (!n) return; this.addFolder(n, sh.parent); this.setState({ sheet: null }); return this.showToast(`Created “${n}”`); }
+    if (sh.type === 'add') {
+      if (!sh.fetched) return;
+      const v = { id: 'v' + Date.now(), title: sh.fetched.title, channel: sh.fetched.channel, dur: sh.fetched.dur, desc: sh.fetched.desc, tags: sh.tags, folder: sh.target };
+      this.setState(s => ({ videos: [v, ...s.videos], sheet: null }));
+      return this.showToast(`Saved to ${sh.target ? this.fb(sh.target).name : 'Inbox'}`);
+    }
+  };
+  setNotes = (id, notes) => {
+    this.setState(s => ({ videos: s.videos.map(v => v.id === id ? { ...v, notes } : v), notesSaving: true }));
+    clearTimeout(this._notesT); this._notesT = setTimeout(() => this.setState({ notesSaving: false }), 600);
+  };
+  onNotes = e => this.setNotes(this.state.player, e.target.value);
+  addStamp = () => {
+    const s = this.state, P = s.videos.find(v => v.id === s.player); if (!P) return;
+    const t = this.fmt(this.secs(P.dur) * s.progress), cur = P.notes || '';
+    this.setNotes(P.id, cur + (cur && !cur.endsWith('\n') ? '\n' : '') + `[${t}] `);
+  };
+  onScroll = e => { const sc = e.currentTarget.scrollTop > 40; if (sc !== this.state.scrolled) this.setState({ scrolled: sc }); };
+  onQuery = e => this.setState({ query: e.target.value });
+  onQueryKey = e => { if (e.key === 'Enter') this.pushRecent(); };
+  pushRecent = () => { const q = this.state.query.trim(); if (q) this.setState(s => ({ recent: [q, ...s.recent.filter(r => r !== q)].slice(0, 4) })); };
+  clearQuery = () => this.setState({ query: '' });
+
+  toLocal = (cx, cy) => { const el = this.screenRef.current; if (!el) return { x: cx, y: cy }; const r = el.getBoundingClientRect(), k = r.width / 402; return { x: (cx - r.left) / k, y: (cy - r.top) / k }; };
+  startPress = (id, e) => {
+    if (this.state.selecting || e.target.closest('[data-more]') || (e.button && e.button !== 0)) return;
+    const lp = this.props.longPressMs ?? 450, sx = e.clientX, sy = e.clientY;
+    this._lpFired = false; this.setState({ pressing: id }); clearTimeout(this._lp);
+    this._lp = setTimeout(() => { this._lpFired = true; const p = this.toLocal(sx, sy); this.setState({ pressing: null, drag: { id, x: p.x, y: p.y, sx, sy, moved: false, over: null } }); }, lp);
+    const move = ev => {
+      const d = this.state.drag;
+      if (!d) { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) { clearTimeout(this._lp); if (this.state.pressing) this.setState({ pressing: null }); } return; }
+      ev.preventDefault();
+      const moved = d.moved || Math.hypot(ev.clientX - d.sx, ev.clientY - d.sy) > 6, p = this.toLocal(ev.clientX, ev.clientY);
+      const el = document.elementFromPoint(ev.clientX, ev.clientY), t = el && el.closest('[data-drop]'), over = t ? t.getAttribute('data-drop') : null;
+      this.setState({ drag: { ...d, x: p.x, y: p.y, moved, over: over || null } });
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+      clearTimeout(this._lp); if (this.state.pressing) this.setState({ pressing: null });
+      const d = this.state.drag; if (!d) return;
+      this.setState({ drag: null });
+      if (d.moved && d.over) { const target = d.over === '__inbox' ? null : d.over; const v = this.state.videos.find(x => x.id === d.id); if (v && v.folder !== target) this.moveVideos([d.id], target); }
+      else if (!d.moved) this.setState({ menu: d.id });
+    };
+    window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  };
+
+  renderVals() {
+    const s = this.state, I = this.icons(), V = s.videos, L = this.layout();
+    const frameOnly = !!this.props.frameOnly;
+    const cur = s.tab === 'library' && s.path.length ? s.path[s.path.length - 1] : null;
+    const isLib = s.tab === 'library' && !s.tagView, isLibRoot = isLib && !cur, isFolder = isLib && !!cur;
+    const isSearch = s.tab === 'search' && !s.tagView, isTagDetail = !!s.tagView, isSettings = s.tab === 'settings' && !s.tagView;
+    const q = isSearch ? s.query.trim().toLowerCase() : '';
+    const countIn = id => { const ids = this.descIds(id); return V.filter(v => ids.includes(v.folder)).length; };
+    const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+    const dots = n => [1, 2, 3].map(i => ({ bg: i <= n ? 'var(--color-accent-2-600)' : 'var(--color-neutral-300)' }));
+    const dragging = !!(s.drag && s.drag.moved);
+    const over = dragging ? s.drag.over : null;
+    const dropRing = id => over === id ? '0 0 0 3px var(--color-accent)' : dragging ? '0 0 0 2px var(--color-accent-300)' : 'none';
+    const dropBg = (id, base) => over === id ? 'var(--color-accent-100)' : base;
+    const colCur = isLibRoot && L === 'Columns' && s.colPath.length ? s.colPath[s.colPath.length - 1] : null;
+
+    let list = [], header = '', hint = '', showPath = false, headerDrop = '';
+    if (isLibRoot && colCur) { list = V.filter(v => v.folder === colCur); header = this.fb(colCur).name; hint = plural(list.length, 'video'); }
+    else if (isLibRoot) { list = V.filter(v => !v.folder); header = 'Inbox'; hint = dragging ? 'Drop here to unfile' : (list.length ? 'Not filed yet' : ''); headerDrop = '__inbox'; }
+    else if (isFolder) { list = V.filter(v => v.folder === cur); header = 'Videos'; }
+    else if (isTagDetail) { list = V.filter(v => v.tags.includes(s.tagView)); showPath = true; }
+    else if (isSearch && q) {
+      showPath = true;
+      list = V.filter(v => {
+        const t = v.title.toLowerCase().includes(q), d = v.desc.toLowerCase().includes(q), g = v.tags.some(x => x.includes(q));
+        return s.scope === 'all' ? t || d || g : s.scope === 'title' ? t : s.scope === 'description' ? d : g;
+      });
+      header = plural(list.length, 'result');
+    }
+    const videoItems = list.map(v => {
+      const [thumb, blob] = this.pal(v.channel), sel = s.selected.includes(v.id), isDrag = s.drag && s.drag.id === v.id;
+      const tq = isSearch && (s.scope === 'all' || s.scope === 'title') ? q : '';
+      const inT = q && v.title.toLowerCase().includes(q);
+      let snippetParts = [];
+      const di = q ? v.desc.toLowerCase().indexOf(q) : -1;
+      if (di >= 0 && (s.scope === 'description' || (s.scope === 'all' && !inT))) {
+        const a = Math.max(0, di - 28), b = Math.min(v.desc.length, di + q.length + 48);
+        snippetParts = this.hl((a ? '…' : '') + v.desc.slice(a, b) + (b < v.desc.length ? '…' : ''), q);
+      }
+      const hit = t => (q && (s.scope === 'all' || s.scope === 'tags') && t.includes(q)) || t === s.tagView;
+      const tags = v.tags.slice(0, 3).map(t => ({ name: t, bg: hit(t) ? 'var(--color-accent-200)' : 'var(--color-surface)', fg: hit(t) ? 'var(--color-accent-800)' : 'var(--color-neutral-700)' }));
+      if (v.tags.length > 3) tags.push({ name: '+' + (v.tags.length - 3), bg: 'transparent', fg: 'var(--color-neutral-600)' });
+      return {
+        id: v.id, dur: v.dur, thumb, blob, titleParts: this.hl(v.title, tq),
+        meta: showPath ? `${v.channel} · ${this.pathStr(v.folder)}` : v.channel,
+        snippetParts, hasSnippet: snippetParts.length > 0, tags, hasTags: tags.length > 0, checked: sel,
+        rowBg: sel ? 'var(--color-accent-100)' : (s.pressing === v.id || (isDrag && !dragging)) ? 'var(--color-surface)' : 'transparent',
+        press: s.pressing === v.id ? 'scale(.98)' : (isDrag && !dragging) ? 'scale(1.03)' : 'none',
+        lift: isDrag && !dragging ? 'var(--shadow-lg)' : 'none', opacity: isDrag && dragging ? 0.35 : 1,
+        checkBorder: sel ? 'var(--color-accent)' : 'var(--color-neutral-400)', checkBg: sel ? 'var(--color-accent)' : 'transparent',
+        onDown: e => this.startPress(v.id, e),
+        onCtx: e => e.preventDefault(),
+        onClick: e => { if (e.target.closest('[data-more]')) return; if (this._lpFired) { this._lpFired = false; return; } if (s.selecting) this.toggleSel(v.id); else { if (isSearch) this.pushRecent(); this.play(v.id); } },
+        onMore: e => { e.stopPropagation(); this.setState({ menu: v.id }); },
+      };
+    });
+
+    let screenTitle = 'Library', subtitle = '', showLevel = false, crumbs = [];
+    if (isLibRoot) subtitle = `${plural(V.length, 'video')} · ${plural(this.kids(null).length, 'folder')}`;
+    if (isFolder) {
+      const ch = this.chain(cur); screenTitle = ch[ch.length - 1].name; showLevel = true;
+      subtitle = `Level ${ch.length} of 3 · ${plural(list.length, 'video')}`;
+      crumbs = [{ name: 'Library', dropId: '__inbox', showSep: false, onTap: () => this.setState({ path: [] }) }, ...ch.slice(0, -1).map((f, i) => ({ name: f.name, dropId: f.id, showSep: true, onTap: () => this.setState({ path: s.path.slice(0, i + 1) }) }))]
+        .map(c => ({ ...c, bg: dropBg(c.dropId, 'transparent'), ring: dragging ? dropRing(c.dropId) : 'none' }));
+    }
+    if (isSearch) screenTitle = 'Search';
+    if (isTagDetail) { screenTitle = s.tagView; subtitle = 'Tag · ' + plural(list.length, 'video'); }
+    if (isSettings) screenTitle = 'Settings';
+    const d = cur ? this.depth(cur) : 0;
+
+    const rootFolders = this.kids(null).map(f => {
+      const t = this.tone(f.id), n = countIn(f.id), k = this.kids(f.id).length;
+      return { id: f.id, name: f.name, meta: plural(n, 'video') + (k ? ` · ${k} inside` : ''), bg: t.bg, blob: t.blob, icon: t.icon, ink: t.ink, ring: dropRing(f.id), scale: over === f.id ? 'scale(1.04)' : 'none', onTap: () => this.openFolder(f.id) };
+    });
+    const rowFolders = isFolder ? this.kids(cur) : (isLibRoot && L === 'List' ? this.kids(null) : []);
+    const folderRows = rowFolders.map(f => {
+      const t = this.tone(f.id), k = this.kids(f.id).length;
+      return { id: f.id, name: f.name, meta: plural(countIn(f.id), 'video') + (k ? ` · ${plural(k, 'folder')}` : ''), bg: t.bg, icon: t.icon, rowBg: dropBg(f.id, 'var(--color-surface)'), ring: dropRing(f.id), onTap: () => this.openFolder(f.id) };
+    });
+
+    const treeNodes = [];
+    const walkT = (pid, dd) => this.kids(pid).forEach(f => {
+      const hasKids = this.kids(f.id).length > 0, open = !!s.expanded[f.id];
+      treeNodes.push({ id: f.id, name: f.name, count: countIn(f.id), padL: (4 + dd * 22) + 'px', weight: dd === 0 ? 700 : 600, icon: this.tone(f.id).icon,
+        chevOpacity: hasKids ? 1 : 0, chevRot: open ? 'rotate(90deg)' : 'none', bg: dropBg(f.id, 'transparent'), ring: dragging ? dropRing(f.id) : 'none',
+        onToggle: e => { e.stopPropagation(); if (hasKids) this.setState(st => ({ expanded: { ...st.expanded, [f.id]: !open } })); },
+        onTap: () => this.openPath(f.id) });
+      if (hasKids && open) walkT(f.id, dd + 1);
+    });
+    if (isLibRoot && L === 'Tree') walkT(null, 0);
+
+    let columns = [], colCrumbs = [];
+    if (isLibRoot && L === 'Columns') {
+      const cp = s.colPath, parents = [null, ...cp];
+      columns = parents.map((pid, ci) => {
+        const items = this.kids(pid).map(f => {
+          const sel = cp[ci] === f.id, t = this.tone(f.id);
+          return { id: f.id, name: f.name, hasKids: this.kids(f.id).length > 0, icon: sel ? 'var(--color-bg)' : t.icon,
+            bg: over === f.id ? 'var(--color-accent-100)' : sel ? 'var(--color-accent)' : 'transparent', fg: sel && over !== f.id ? 'var(--color-bg)' : 'var(--color-text)',
+            ring: dragging ? dropRing(f.id) : 'none', onTap: () => this.setState({ colPath: sel ? cp.slice(0, ci) : [...cp.slice(0, ci), f.id] }) };
+        });
+        const dd = pid ? this.depth(pid) : 0;
+        return { title: pid ? this.fb(pid).name : 'Library', items, empty: items.length === 0, canAdd: dd < 3, onAdd: () => this.openFolderSheet(pid) };
+      });
+      colCrumbs = [{ name: 'Library', dropId: '__inbox', id: null }, ...cp.map(id => ({ name: this.fb(id).name, dropId: id, id }))].map((c, i, arr) => {
+        const last = i === arr.length - 1;
+        return { name: c.name, dropId: c.dropId, showSep: i > 0, bg: over === c.dropId ? 'var(--color-accent-100)' : last ? 'var(--color-accent-2-200)' : 'transparent', fg: last ? 'var(--color-accent-2-800)' : 'var(--color-accent-2-700)', ring: dragging ? dropRing(c.dropId) : 'none', onTap: () => this.setState({ colPath: cp.slice(0, i) }) };
+      });
+    }
+
+    const tagList = this.allTags();
+    const noVideos = list.length === 0 && (isLibRoot || isFolder || isTagDetail || (isSearch && !!q));
+    let emptyTitle = 'Nothing here yet', emptyBody = 'Add a video, or hold one elsewhere and drag it in.', emptyCanAdd = isFolder || !!colCur;
+    if (isLibRoot && !colCur) { emptyTitle = 'Inbox zero'; emptyBody = 'Everything is filed. New videos land here until you sort them.'; }
+    if (isSearch) { emptyTitle = 'No matches'; emptyBody = `Nothing in titles, descriptions or tags matches “${s.query.trim()}”.`; emptyCanAdd = false; }
+
+    const sh = s.sheet;
+    let treeRows = [], treeCanCreate = false, treeNewLabel = '', treeMaxNote = '';
+    if (sh && (sh.type === 'move' || sh.type === 'add')) {
+      const flat = []; const walk = (pid, dd) => this.kids(pid).forEach(f => { flat.push({ f, dd }); walk(f.id, dd + 1); }); walk(null, 0);
+      const row = (id, name, dd) => {
+        const selected = sh.target === id, t = id ? this.tone(id) : null;
+        return { name, selected, isCurrent: sh.type === 'move' && sh.current === id, padL: (12 + dd * 22) + 'px', showGuide: dd > 0,
+          icon: id ? I.folderFill : I.inbox, iconColor: id ? t.icon : 'var(--color-neutral-600)', weight: dd === 0 ? 700 : 600,
+          bg: selected ? 'var(--color-accent-100)' : 'transparent', ring: selected ? 'var(--color-accent)' : 'var(--color-neutral-400)', fill: selected ? 'var(--color-accent)' : 'transparent',
+          onTap: () => this.patchSheet({ target: id, creating: false }) };
+      };
+      treeRows = [row(null, 'Inbox', 0), ...flat.map(({ f, dd }) => row(f.id, f.name, dd))];
+      treeCanCreate = (sh.target ? this.depth(sh.target) : 0) < 3;
+      treeNewLabel = sh.target ? `New folder in ${this.fb(sh.target)?.name}` : 'New top-level folder';
+      treeMaxNote = `${this.fb(sh.target || '')?.name || ''} is at the deepest level — pick a folder above it to nest a new one.`;
+    }
+    const sheetTitle = !sh ? '' : sh.type === 'move' ? (sh.ids.length > 1 ? `Move ${sh.ids.length} videos` : 'Move to folder') : sh.type === 'tags' ? (sh.ids.length > 1 ? `Tag ${sh.ids.length} videos` : 'Tags') : sh.type === 'folder' ? 'New folder' : sh.share ? 'Save to Shelf' : 'Add video';
+    const confirmLabel = !sh ? '' : { move: 'Move', tags: 'Done', folder: 'Create', add: 'Save' }[sh.type];
+    const canConfirm = !sh ? false : sh.type === 'move' ? sh.target !== sh.current : sh.type === 'folder' ? !!sh.name.trim() : sh.type === 'add' ? !!sh.fetched : true;
+    let moveSub = '';
+    if (sh && sh.type === 'move') { const v0 = V.find(v => v.id === sh.ids[0]); moveSub = sh.ids.length > 1 ? 'Choose where these videos should live.' : `“${v0.title}” · now in ${this.pathStr(v0.folder)}`; }
+
+    let tagCurrent = [], tagSuggest = [], tagInputTrim = '', showCreateTag = false, tagSheetLabel = '';
+    if (sh && sh.type === 'tags') {
+      const vs = V.filter(v => sh.ids.includes(v.id));
+      const common = vs.length ? vs[0].tags.filter(t => vs.every(v => v.tags.includes(t))) : [];
+      tagCurrent = common.map(t => ({ name: t, onTap: () => this.removeTagFrom(sh.ids, t) }));
+      tagInputTrim = sh.input.trim().toLowerCase();
+      tagSuggest = tagList.map(x => x[0]).filter(t => !common.includes(t) && (!tagInputTrim || t.includes(tagInputTrim))).slice(0, 12).map(t => ({ name: t, onTap: () => this.addTagTo(sh.ids, t) }));
+      showCreateTag = !!tagInputTrim && !tagList.some(x => x[0] === tagInputTrim);
+      tagSheetLabel = sh.ids.length > 1 ? `On all ${sh.ids.length} videos` : `On “${vs[0] ? vs[0].title : ''}”`;
+    }
+    let addTagChips = [];
+    if (sh && sh.type === 'add') {
+      addTagChips = tagList.slice(0, 10).map(([t]) => { const on = sh.tags.includes(t); return { name: t, bg: on ? 'var(--color-accent-2-500)' : 'var(--color-surface)', fg: on ? 'var(--color-bg)' : 'var(--color-text)', onTap: () => this.patchSheet({ tags: on ? sh.tags.filter(x => x !== t) : [...sh.tags, t] }) }; });
+    }
+    let parentOptions = [], folderLevelText = '', folderLevelDots = [];
+    if (sh && sh.type === 'folder') {
+      const opts = [{ id: null, label: 'Library' }]; const walk = pid => this.kids(pid).forEach(f => { if (this.depth(f.id) < 3) { opts.push({ id: f.id, label: this.pathStr(f.id) }); walk(f.id); } }); walk(null);
+      parentOptions = opts.map(o => { const on = sh.parent === o.id; return { label: o.label, icon: o.id ? I.folder : I.library, bg: on ? 'var(--color-accent)' : 'var(--color-surface)', fg: on ? 'var(--color-bg)' : 'var(--color-text)', onTap: () => this.patchSheet({ parent: o.id }) }; });
+      const lvl = (sh.parent ? this.depth(sh.parent) : 0) + 1;
+      folderLevelText = `Level ${lvl} of 3`; folderLevelDots = dots(lvl);
+    }
+
+    const P = s.player && V.find(v => v.id === s.player);
+    let pv = {}, moreItems = [], elapsed = '0:00';
+    if (P) {
+      const [thumb, blob] = this.pal(P.channel), t = P.folder ? this.tone(P.folder) : { bg: 'var(--color-neutral-200)', icon: 'var(--color-neutral-600)' };
+      pv = { ...P, thumb, blob, path: this.pathStr(P.folder), folderBg: t.bg, folderIcon: t.icon, tags: P.tags.map(x => ({ name: x, onTap: () => this.setState({ player: null, playing: false, tagView: x, tagFrom: s.tab === 'search' ? 'search' : 'player', selecting: false }) })) };
+      moreItems = V.filter(v => v.folder === P.folder && v.id !== P.id).slice(0, 3).map(v => { const [a, b] = this.pal(v.channel); return { title: v.title, meta: `${v.channel} · ${v.dur}`, thumb: a, blob: b, onTap: () => this.play(v.id) }; });
+      elapsed = this.fmt(this.secs(P.dur) * s.progress);
+    }
+    const M = s.menu && V.find(v => v.id === s.menu);
+    let mv = {}, menuItems = [];
+    if (M) {
+      const [thumb, blob] = this.pal(M.channel);
+      mv = { title: M.title, meta: `${M.channel} · ${M.dur} · ${this.pathStr(M.folder)}`, thumb, blob };
+      const it = (label, icon, fn, color) => ({ label, icon, color: color || 'var(--color-text)', onTap: e => { e.stopPropagation(); fn(); } });
+      menuItems = [
+        it('Play', I.play, () => this.play(M.id)),
+        it('Move to folder…', I.folderInput, () => this.openMove([M.id])),
+        it('Edit tags…', I.tag, () => this.openTags([M.id])),
+        ...(s.player ? [] : [it('Select', I.circleCheck, () => this.setState({ menu: null, selecting: true, selected: [M.id] }))]),
+        it('Delete', I.trash, () => this.deleteVideos([M.id]), 'var(--color-accent-700)'),
+      ];
+    }
+    const G = s.drag && V.find(v => v.id === s.drag.id);
+    let gv = {}, ghostTransform = 'none', dragTargetName = '';
+    if (G && dragging) {
+      const [thumb, blob] = this.pal(G.channel); gv = { title: G.title, thumb, blob };
+      ghostTransform = `translate(${Math.round(s.drag.x - 90)}px, ${Math.round(s.drag.y - 34)}px)`;
+      dragTargetName = over === '__inbox' ? 'Inbox' : over ? (this.fb(over)?.name || '') : '';
+    }
+
+    const seg = (opts, curV, fn) => opts.map(o => ({ label: o, bg: curV === o ? 'var(--color-bg)' : 'transparent', fg: curV === o ? 'var(--color-text)' : 'var(--color-neutral-700)', shadow: curV === o ? 'var(--shadow-sm)' : 'none', onTap: () => fn(o) }));
+    const settingsGroups = [
+      { title: 'Appearance', note: 'Layout changes how folders appear on the Library screen.', rows: [
+        { isSeg: true, label: 'Theme', icon: I.sun, iconBg: 'var(--color-accent-200)', iconFg: 'var(--color-accent-700)', segs: seg(['System', 'Light', 'Dark'], s.theme, o => this.setState({ theme: o })) },
+        { isSeg: true, label: 'Library layout', icon: I.grid, iconBg: 'var(--color-accent-2-200)', iconFg: 'var(--color-accent-2-700)', segs: seg(['Grid', 'List', 'Tree', 'Columns'], L, o => this.setState({ layout: o, colPath: [] })) },
+      ] },
+      { title: 'Export & import', note: 'Exports include folders, tags and video links as JSON — not the videos themselves.', rows: [
+        { isLink: true, label: 'Export library', value: 'JSON', icon: I.upload, iconBg: 'var(--color-neutral-200)', iconFg: 'var(--color-neutral-700)', onTap: () => this.showToast('Exported shelf-library.json') },
+        { isLink: true, label: 'Import library', value: 'From Files', icon: I.download, iconBg: 'var(--color-neutral-200)', iconFg: 'var(--color-neutral-700)', onTap: () => this.showToast('Opening Files…') },
+      ] },
+      { title: 'Adding videos', note: 'Shelf appears in the share sheet of the YouTube app and Safari.', rows: [
+        { isLink: true, label: 'Share from YouTube', value: 'Preview', icon: I.share, iconBg: 'var(--color-accent-200)', iconFg: 'var(--color-accent-700)', onTap: this.openShare },
+      ] },
+    ];
+
+    const nSel = s.selected.length, allIds = videoItems.map(v => v.id);
+    const showRows = isFolder || (isLibRoot && L === 'List');
+    return {
+      I, scrollRef: this.scrollRef, screenRef: this.screenRef, searchRef: this.searchRef, colRef: this.colRef, inlineRef: this.inlineRef, folderNameRef: this.folderNameRef, onScroll: this.onScroll,
+      showCaption: !frameOnly, pagePad: frameOnly ? '0' : '40px 24px', pageMinH: frameOnly ? '0' : '100vh',
+      screenKey: s.tab + s.path.join('/') + (s.tagView || '') + L,
+      isSearch, isSettings,
+      screenTitle, subtitle, showSubtitle: !!subtitle, showLevel, levelDots: dots(d), crumbs, showCrumbs: crumbs.length > 0,
+      query: s.query, onQuery: this.onQuery, onQueryKey: this.onQueryKey, hasQuery: !!s.query, clearQuery: this.clearQuery, closeSearch: this.closeSearch,
+      scopes: seg(['All', 'Title', 'Description', 'Tags'], { all: 'All', title: 'Title', description: 'Description', tags: 'Tags' }[s.scope], o => this.setState({ scope: o.toLowerCase() })),
+      searchEmpty: isSearch && !q,
+      recents: s.recent.map(r => ({ q: r, onTap: () => this.setState({ query: r }) })),
+      tagCloud: tagList.slice(0, 12).map(([t, c]) => ({ name: t, count: c, onTap: () => this.setState({ tagView: t, tagFrom: 'search' }) })),
+      showGrid: isLibRoot && L === 'Grid', rootFolders, newRootFolder: this.newRootFolder,
+      showTree: isLibRoot && L === 'Tree', treeNodes,
+      showColumns: isLibRoot && L === 'Columns', columns, colCrumbs,
+      showFolderRows: showRows, folderRows, canAddRow: showRows && d < 3, addRowLabel: isFolder ? 'New subfolder' : 'New folder', addRowTap: isFolder ? this.newSubFolder : this.newRootFolder,
+      atMaxDepth: isFolder && d >= 3,
+      settingsGroups, libStats: `${plural(V.length, 'video')} in ${plural(s.folders.length, 'folder')}`,
+      showVideos: isLibRoot || isFolder || isTagDetail || (isSearch && !!q), showVideoHeader: !!header && (list.length > 0 || dragging), videoHeader: header, videoHint: hint,
+      headerDrop, headerBg: over === '__inbox' && headerDrop ? 'var(--color-accent-100)' : 'transparent', headerRing: dragging && headerDrop ? dropRing('__inbox') : 'none',
+      videoItems, noVideos, emptyTitle, emptyBody, emptyCanAdd, openAdd: this.openAdd,
+      selecting: s.selecting, notSelecting: !s.selecting,
+      fadeOpacity: s.scrolled || s.selecting || dragging ? 1 : 0, statusInk: s.sheet && s.sheet.share ? 'var(--color-bg)' : 'var(--color-text)', homeInk: 'var(--color-text)',
+      showGear: isLibRoot && !s.selecting, openSettings: this.openSettings,
+      showBack: (isFolder || isTagDetail || isSettings) && !s.selecting,
+      backLabel: isTagDetail ? (s.tagFrom === 'search' ? 'Search' : 'Library') : isSettings ? 'Library' : (s.path.length > 1 ? this.fb(s.path[s.path.length - 2]).name : 'Library'), goBack: this.goBack,
+      backDrop: isFolder ? (s.path.length > 1 ? s.path[s.path.length - 2] : '__inbox') : '',
+      backBg: isFolder && over && over === (s.path.length > 1 ? s.path[s.path.length - 2] : '__inbox') ? 'var(--color-accent-200)' : 'color-mix(in srgb, var(--color-bg) 58%, transparent)',
+      backRing: isFolder && dragging ? dropRing(s.path.length > 1 ? s.path[s.path.length - 2] : '__inbox') : 'var(--shadow-md)',
+      compactTitle: dragging ? 'Drop on a folder' : s.selecting ? (nSel ? `${nSel} selected` : 'Select videos') : screenTitle,
+      compactOpacity: s.selecting || s.scrolled || dragging ? 1 : 0, compactInk: dragging ? 'var(--color-accent-700)' : 'var(--color-text)',
+      showSelectBtn: !s.selecting && !dragging && (isLibRoot || isFolder || isTagDetail) && list.length > 0, startSelect: this.startSelect, endSelect: this.endSelect,
+      selectAllLabel: nSel === allIds.length && nSel ? 'Deselect all' : 'Select all',
+      selectAll: () => this.setState({ selected: nSel === allIds.length ? [] : allIds }),
+      showPlus: !s.selecting && !dragging && isLib, toggleAddMenu: this.toggleAddMenu, addMenuOpen: s.addMenu,
+      addMenuItems: [{ label: 'Add video', icon: I.link, onTap: this.openAdd }, ...(isFolder && d >= 3 ? [] : [{ label: isFolder ? 'New subfolder' : 'New folder', icon: I.folderPlus, onTap: isFolder ? this.newSubFolder : this.newRootFolder }])],
+      showSearchPill: !s.selecting && (isLib || isTagDetail), goSearch: this.goSearch,
+      searchPillLabel: 'Search titles, descriptions, tags',
+      selectActions: [
+        { label: 'Move', icon: I.folderInput, color: nSel ? 'var(--color-text)' : 'var(--color-neutral-400)', onTap: () => nSel && this.openMove(s.selected) },
+        { label: 'Tag', icon: I.tag, color: nSel ? 'var(--color-text)' : 'var(--color-neutral-400)', onTap: () => nSel && this.openTags(s.selected) },
+        { label: 'Delete', icon: I.trash, color: nSel ? 'var(--color-accent-700)' : 'var(--color-neutral-400)', onTap: () => nSel && this.deleteVideos(s.selected) },
+      ],
+      dragging, gv, ghostTransform, dragHasTarget: !!dragTargetName, dragTargetName,
+      menuOpen: !!M, mv, menuItems, closeMenu: this.closeMenu,
+      playerOpen: !!P, pv, playing: s.playing, notPlaying: !s.playing, togglePlay: this.togglePlay, closePlayer: this.closePlayer,
+      playBtnOpacity: s.playing ? 0.35 : 1, progressPct: (s.progress * 100).toFixed(1) + '%', elapsed,
+      notes: P ? P.notes || '' : '', onNotes: this.onNotes, addStamp: this.addStamp,
+      notesStatus: s.notesSaving ? 'Saving…' : (P && P.notes ? 'Saved' : 'Private to you'),
+      notesCount: P && P.notes ? plural(P.notes.trim().split(/\s+/).filter(Boolean).length, 'word') : '',
+      playerMore: () => this.setState({ menu: s.player }), playerMove: () => this.openMove([s.player]), playerTags: () => this.openTags([s.player]),
+      hasMore: moreItems.length > 0, moreItems, moreTitle: P ? `More in ${P.folder ? this.fb(P.folder).name : 'Inbox'}` : '',
+      shareBg: !!(sh && sh.share),
+      sheetOpen: !!sh, closeSheet: this.closeSheet, confirmSheet: this.confirmSheet, sheetTitle, confirmLabel, confirmOpacity: canConfirm ? 1 : 0.4,
+      isAddSheet: !!sh && sh.type === 'add', isMoveSheet: !!sh && sh.type === 'move', isTagSheet: !!sh && sh.type === 'tags', isFolderSheet: !!sh && sh.type === 'folder',
+      moveSub, showPicker: !!sh && (sh.type === 'move' || sh.type === 'add'), treeRows,
+      treeCreating: !!sh && !!sh.creating, treeShowNewBtn: !!sh && !sh.creating && treeCanCreate, treeMaxDepth: !!sh && !sh.creating && !treeCanCreate && (sh.type === 'move' || sh.type === 'add'),
+      treeNewLabel, treeMaxNote, startInline: this.startInline, inlineName: sh ? sh.newName || '' : '', onInlineName: this.onInlineName, onInlineKey: this.onInlineKey, createInline: this.createInline,
+      inlinePlaceholder: sh && sh.target ? `Folder inside ${this.fb(sh.target)?.name}` : 'Folder name',
+      addShowUrl: !!sh && !sh.share, addUrl: sh ? sh.url || '' : '', onAddUrl: this.onAddUrl, pasteUrl: this.pasteUrl, addCanPaste: !!sh && !sh.url, addLoading: !!sh && !!sh.loading, addFetched: !!sh && !!sh.fetched,
+      addVideo: sh && sh.fetched ? { title: sh.fetched.title, meta: `${sh.fetched.channel} · ${sh.fetched.dur}` } : {}, addTagChips,
+      tagCurrent, tagNoneYet: tagCurrent.length === 0, tagInput: sh ? sh.input || '' : '', onTagInput: this.onTagInput, onTagKey: this.onTagKey,
+      tagInputTrim, showCreateTag, createTag: this.createTag, tagSuggest, tagSheetLabel, tagSuggestLabel: tagInputTrim ? 'Matching tags' : 'Your tags',
+      folderName: sh ? sh.name || '' : '', onFolderName: this.onFolderName, onFolderKey: this.onFolderKey, parentOptions, folderLevelText, folderLevelDots,
+      toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastUndo: !!(s.toast && s.toast.snap), undo: this.undo,
+    };
+  }
+}
+</script>
+</body>
+</html>

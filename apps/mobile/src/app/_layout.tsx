@@ -2,8 +2,11 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { ActivityIndicator, LogBox, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { authStorage, convex } from "@/lib/convex";
+import { loadPreferences } from "@/lib/preferences";
 import { useTheme } from "@/lib/theme";
 
 // The Convex client console.errors every failed server call. Wrong-password /
@@ -14,11 +17,16 @@ LogBox.ignoreLogs([
 ]);
 
 export default function RootLayout() {
+  useEffect(() => {
+    void loadPreferences();
+  }, []);
   return (
-    <ConvexAuthProvider client={convex} storage={authStorage}>
-      <StatusBar style="auto" />
-      <RootNavigator />
-    </ConvexAuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ConvexAuthProvider client={convex} storage={authStorage}>
+        <StatusBar style="auto" />
+        <RootNavigator />
+      </ConvexAuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -35,7 +43,7 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.bg } }}>
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>

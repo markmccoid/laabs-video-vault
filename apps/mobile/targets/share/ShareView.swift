@@ -7,25 +7,34 @@ struct ShareView: View {
   var body: some View {
     NavigationStack {
       content
-        .navigationTitle("Save to Video Vault")
+        .background(Organic.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+          ToolbarItem(placement: .principal) {
+            Text("Save to Video Vault").font(Organic.display(19)).foregroundStyle(Organic.text)
+          }
           if !isDone {
             ToolbarItem(placement: .cancellationAction) {
               Button(isFinished ? "Close" : "Cancel", action: cancel)
-                .disabled(model.phase == .saving)
+                .scrollContentBackground(.hidden)
+    .background(Organic.bg)
+    .disabled(model.phase == .saving)
             }
           }
           if showsForm {
             ToolbarItem(placement: .confirmationAction) {
               Button(model.saveTitle) { Task { await model.save() } }
-                .fontWeight(.semibold)
+                .font(Organic.body(15, .bold))
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .tint(Organic.accent)
                 .disabled(model.phase != .ready)
                 .accessibilityIdentifier("share-save")
             }
           }
         }
     }
+    .tint(Organic.accent)
   }
 
   private var isDone: Bool {
@@ -57,7 +66,7 @@ struct ShareView: View {
     case .notYouTube:
       message("link.badge.plus", "Not a YouTube link", "Share a link to a YouTube video.")
     case .done(let text):
-      message("checkmark.circle.fill", text, nil).foregroundStyle(.green)
+      message("checkmark.circle.fill", text, nil).foregroundStyle(Organic.sageInk)
     case .ready, .saving, .failed:
       form
     }
@@ -73,17 +82,19 @@ struct ShareView: View {
             Rectangle().fill(.quaternary).overlay(Image(systemName: "play.rectangle").foregroundStyle(.secondary))
           }
           .frame(width: 112, height: 63)
-          .clipShape(RoundedRectangle(cornerRadius: 6))
+          .clipShape(RoundedRectangle(cornerRadius: 16))
 
           VStack(alignment: .leading, spacing: 4) {
             Text(model.preview?.title.nilIfEmpty ?? model.link ?? "")
-              .font(.subheadline.weight(.semibold))
+              .font(Organic.body(15, .bold))
+              .foregroundStyle(Organic.text)
               .lineLimit(3)
             if let channel = model.preview?.channel.nilIfEmpty {
-              Text(channel).font(.caption).foregroundStyle(.secondary)
+              Text(channel).font(Organic.body(12.5)).foregroundStyle(Organic.muted)
             }
           }
         }
+        .listRowBackground(Organic.surface)
       }
 
       if let existing = model.existing {
@@ -95,7 +106,9 @@ struct ShareView: View {
             Label("In the Trash. Restoring puts it back.", systemImage: "trash")
           }
         }
-        .foregroundStyle(.secondary)
+        .font(Organic.body(14, .semibold))
+        .foregroundStyle(Organic.sageInk)
+        .listRowBackground(Organic.sageSoft)
       }
 
       Section {
@@ -109,21 +122,29 @@ struct ShareView: View {
         TextField("Note (optional)", text: $model.notes, axis: .vertical)
           .lineLimit(2...6)
           .accessibilityIdentifier("share-note")
+      } header: {
+        Text("Save to").font(Organic.body(12, .bold)).foregroundStyle(Organic.muted)
       }
+      .font(Organic.body(15, .semibold))
+      .foregroundStyle(Organic.text)
+      .listRowBackground(Organic.surface)
 
       if case .failed(let text) = model.phase {
-        Section { Text(text).foregroundStyle(.red) }
+        Section { Text(text).font(Organic.body(14, .semibold)).foregroundStyle(Organic.accentInk) }
+          .listRowBackground(Organic.surface)
       }
     }
+    .scrollContentBackground(.hidden)
+    .background(Organic.bg)
     .disabled(model.phase == .saving)
     .overlay { if model.phase == .saving { ProgressView() } }
   }
 
   private func message(_ icon: String, _ title: String, _ body: String?) -> some View {
     VStack(spacing: 12) {
-      Image(systemName: icon).font(.system(size: 44))
-      Text(title).font(.headline).multilineTextAlignment(.center)
-      if let body { Text(body).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center) }
+      Image(systemName: icon).font(.system(size: 44)).foregroundStyle(Organic.accent)
+      Text(title).font(Organic.display(20)).foregroundStyle(Organic.text).multilineTextAlignment(.center)
+      if let body { Text(body).font(Organic.body(15)).foregroundStyle(Organic.muted).multilineTextAlignment(.center) }
     }
     .padding(32)
     .frame(maxWidth: .infinity, maxHeight: .infinity)

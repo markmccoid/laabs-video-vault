@@ -1,10 +1,11 @@
 "use node";
 
-import { parseChapters, parseIsoDuration } from "@lvv/core";
+import { parseChapters, parseIsoDuration, parseYouTubeUrl } from "@lvv/core";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalAction, type ActionCtx } from "./_generated/server";
+import { action, internalAction, type ActionCtx } from "./_generated/server";
+import { requireUserId } from "./lib/auth";
 
 /** YouTube Shorts can be up to 3 minutes. Only probe videos at or under this. */
 const MAX_SHORT_SECONDS = 180;
@@ -73,6 +74,38 @@ export const fetchMetadata = internalAction({
         state: "failed",
         error: err instanceof Error ? err.message : String(err),
       });
+    }
+  },
+});
+
+export type VideoPreview =
+  | { status: "ok"; youtubeId: string; title: string; channelTitle: string; durationSec?: number; thumbUrl?: string }
+  | { status: "invalid" | "unavailable" | "failed" };
+
+/**
+ * Look up a video's details before saving it (Add video sheet). Saves
+ * nothing; `videos.add` fetches and stores the full metadata on save.
+ */
+export const preview = action({
+  args: { input: v.string() },
+  handler: async (ctx, { input }): Promise<VideoPreview> => {
+    await requireUserId(ctx);
+    const parsed = parseYouTubeUrl(input);
+    if (!parsed) return { status: "invalid" };
+    try {
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      const meta = apiKey ? await fromDataApi(parsed.videoId, apiKey) : await fromOEmbed(parsed.videoId);
+      if (meta === "unavailable") return { status: "unavailable" };
+      return {
+        status: "ok",
+        youtubeId: parsed.videoId,
+        title: meta.title,
+        channelTitle: meta.channelTitle,
+        durationSec: meta.durationSec,
+        thumbUrl: meta.thumbUrl,
+      };
+    } catch {
+      return { status: "failed" };
     }
   },
 });

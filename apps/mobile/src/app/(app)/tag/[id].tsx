@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
 import { VideoListScreen } from "@/components/VideoListScreen";
 import { api, type Id } from "@/lib/api";
+import { useFolders } from "@/lib/folders";
 import { attempt, confirmDestructive, promptText } from "@/lib/prompt";
 
 export default function TagScreen() {
@@ -11,6 +12,7 @@ export default function TagScreen() {
   const videos = useQuery(api.videos.listByTag, tag ? { tagId: id } : "skip");
   const rename = useMutation(api.tags.rename);
   const remove = useMutation(api.tags.remove);
+  const folders = useFolders();
 
   // The tag was deleted (here or on another device).
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function TagScreen() {
   }, [tag]);
 
   const onRename = async () => {
-    const name = await promptText("Rename Tag", { initial: tag?.name });
+    const name = await promptText("Rename tag", { initial: tag?.name });
     if (name !== null) await attempt("Couldn't rename tag", () => rename({ tagId: id, name }));
   };
 
@@ -33,13 +35,15 @@ export default function TagScreen() {
 
   return (
     <VideoListScreen
-      title={tag ? `#${tag.name}` : ""}
+      title={tag?.name ?? ""}
+      largeTitle
       videos={videos}
+      pathFor={(v) => folders.pathFor(v.folderId)}
       emptyTitle="No videos with this tag"
       emptyBody="Select videos in a folder, then tap Tag."
       menuItems={[
-        { label: "Rename Tag", icon: "pencil", onPress: onRename, hidden: !!tag?.system },
-        { label: "Delete Tag", icon: "trash", onPress: onDelete, destructive: true, hidden: !!tag?.system },
+        { label: "Rename tag", icon: "pencil", onPress: onRename, hidden: !!tag?.system },
+        { label: "Delete tag", icon: "trash", onPress: onDelete, destructive: true, hidden: !!tag?.system },
       ]}
     />
   );

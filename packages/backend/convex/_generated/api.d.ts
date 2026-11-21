@@ -19,6 +19,7 @@ import type * as lib_tags from "../lib/tags.js";
 import type * as share from "../share.js";
 import type * as shareTokens from "../shareTokens.js";
 import type * as tags from "../tags.js";
+import type * as timestamps from "../timestamps.js";
 import type * as users from "../users.js";
 import type * as videos from "../videos.js";
 import type * as youtube from "../youtube.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   share: typeof share;
   shareTokens: typeof shareTokens;
   tags: typeof tags;
+  timestamps: typeof timestamps;
   users: typeof users;
   videos: typeof videos;
   youtube: typeof youtube;

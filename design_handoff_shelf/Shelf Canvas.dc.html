@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/organic-bc7c979e-a6ac-4381-a7b5-4fb211fea2b6/styles.css">
+<script src="_ds/organic-bc7c979e-a6ac-4381-a7b5-4fb211fea2b6/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:var(--color-surface);font-family:var(--font-body);color:var(--color-text)}
+a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-800)}
+</style>
+</helmet>
+<section id="t2" style="padding:44px 48px 40px; border-bottom:1px solid var(--color-divider)">
+  <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:8px">
+    <a href="#t2" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-text); color:var(--color-bg); border-radius:999px; text-decoration:none">2</a>
+    <h3 style="margin:0">Key screens &amp; flows</h3>
+  </div>
+  <p style="margin:0 0 28px; max-width:760px; font-size:15px; color:var(--color-neutral-700)">Each frame is the live prototype opened at a specific moment — tap around inside any of them. Search lives at the bottom in a floating glass field (iOS 26+/27 convention); + in the nav bar adds videos and folders.</p>
+  <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+    <div id="2a" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2a" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2a</a>Folder detail · level 2 with breadcrumb</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Folder" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2b" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2b" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2b</a>Drag a video onto a folder</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Drag" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2c" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2c" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2c</a>Move to… sheet with inline new folder</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Move" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2d" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2d" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2d</a>Create folder · location + depth</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="NewFolder" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2e" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2e" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2e</a>Tags · autocomplete existing</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="TagEditor" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2f" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2f" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2f</a>Search · title, description, tags</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Search" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2g" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2g" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2g</a>Add by link</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Add" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2h" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2h" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2h</a>Share extension from YouTube</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Share" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2i" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2i" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2i</a>In-app player</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Player" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="2j" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#2j" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">2j</a>Settings · appearance, export/import</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Settings" hint-size="426px,898px"></dc-import>
+    </div>
+  </div>
+</section>
+<section id="t1" style="padding:44px 48px 40px">
+  <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:8px">
+    <a href="#t1" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-text); color:var(--color-bg); border-radius:999px; text-decoration:none">1</a>
+    <h3 style="margin:0">Library home · four layouts</h3>
+  </div>
+  <p style="margin:0 0 28px; max-width:760px; font-size:15px; color:var(--color-neutral-700)">Same data, four ways to see the folder hierarchy. All support holding a video and dragging it onto any folder. Users can switch in Settings → Library layout.</p>
+  <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+    <div id="1a" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#1a" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">1a</a>Grid · big, tappable top-level folders</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Grid" start-screen="Library" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="1b" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#1b" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">1b</a>List · native-feeling rows</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="List" start-screen="Library" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="1c" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#1c" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">1c</a>Tree · whole hierarchy, expandable</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Tree" start-screen="Library" hint-size="426px,898px"></dc-import>
+    </div>
+    <div id="1d" style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--color-neutral-700)"><a href="#1d" style="font:700 11px ui-monospace,Menlo,monospace; padding:3px 8px; background:var(--color-neutral-300); color:var(--color-text); border-radius:999px; text-decoration:none">1d</a>Columns · Finder-style, never leave the screen</div>
+      <dc-import name="ShelfApp" frame-only="{{ true }}" home-layout="Columns" start-screen="Library" hint-size="426px,898px"></dc-import>
+    </div>
+  </div>
+  <p style="margin:24px 0 0; font-size:13px; color:var(--color-neutral-600)">Try next: “go with <a href="#1d">1d</a> but grid cards at the top level” · “make <a href="#1c">1c</a> the default and drop Columns” · “dark theme pass”</p>
+</section>
+</x-dc>
+</body>
+</html>
