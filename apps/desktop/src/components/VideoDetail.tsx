@@ -1,6 +1,6 @@
 import { folderPath, formatDuration, timestampLabel, timestampSeconds, watchUrl, wordCount } from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
-import { BookmarkPlus, ExternalLink, FolderInput, PanelLeft, PanelLeftDashed, PanelRight, Trash2, X, type LucideIcon } from "lucide-react";
+import { BookmarkPlus, ExternalLink, FolderInput, PanelLeft, Pencil, PanelLeftDashed, PanelRight, Trash2, X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Id, type VideoDetail as Detail } from "../lib/api";
 import { errorMessage } from "../lib/errors";
@@ -8,6 +8,7 @@ import type { ListMode } from "../lib/listMode";
 import { MOD } from "../lib/views";
 import { MoveDialog } from "./Dialogs";
 import { Icon } from "./Icon";
+import { ContextMenu, type MenuItem } from "./Menu";
 import { Player, type PlayerHandle } from "./Player";
 import { useToast } from "./Toast";
 
@@ -141,6 +142,8 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
   );
 }
 
+type Stamp = Detail["bookmarks"][number];
+
 function Timestamps({
   video,
   player,
@@ -151,49 +154,145 @@ function Timestamps({
   readOnly: boolean;
 }) {
   const add = useMutation(api.timestamps.add);
+  const update = useMutation(api.timestamps.update);
   const remove = useMutation(api.timestamps.remove);
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
+  /** The moment being described before it's saved; the video plays on meanwhile. */
+  const [draft, setDraft] = useState<number | null>(null);
+  const [editing, setEditing] = useState<Id<"bookmarks"> | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; stamp: Stamp } | null>(null);
   const chapters = video.bookmarks.filter((b) => b.source === "chapter");
   const mine = video.bookmarks.filter((b) => b.source === "user");
 
-  const capture = async () => {
-    const seconds = timestampSeconds(player.current?.currentTime() ?? 0);
+  const run = async (fn: () => Promise<unknown>) => {
     setError(null);
     try {
-      await add({ videoId: video._id, seconds, label: timestampLabel("", seconds) });
+      await fn();
     } catch (err) {
       setError(errorMessage(err));
     }
   };
 
-  const row = (b: Detail["bookmarks"][number], removable: boolean) => (
-    <li key={b._id} className="ts-row">
-      <button className="ts-time" onClick={() => player.current?.seekTo(b.seconds)} title="Play from here">
-        {formatDuration(b.seconds)}
-      </button>
-      <span className="ts-label">{b.label}</span>
-      {removable && !readOnly && (
-        <button className="btn btn-icon btn-icon-sm ts-remove" aria-label="Remove timestamp" onClick={() => void remove({ timestampId: b._id })}>
-          <Icon as={X} size={14} />
+  const capture = () => {
+    setEditing(null);
+    setDraft(timestampSeconds(player.current?.currentTime() ?? 0));
+  };
+
+  const saveDraft = (label: string) => {
+    const seconds = draft;
+    setDraft(null);
+    if (seconds !== null) void run(() => add({ videoId: video._id, seconds, label: timestampLabel(label, seconds) }));
+  };
+
+  const saveEdit = (stamp: Stamp, label: string) => {
+    setEditing(null);
+    const next = timestampLabel(label, stamp.seconds);
+    if (next !== stamp.label) void run(() => update({ timestampId: stamp._id, label: next }));
+  };
+
+  const del = (stamp: Stamp) =>
+    void run(async () => {
+      await remove({ timestampId: stamp._id });
+      toast("Timestamp deleted", () => add({ videoId: video._id, seconds: stamp.seconds, label: stamp.label }));
+    });
+
+  const openInYouTube = (stamp: Stamp) => window.open(watchUrl(video.youtubeId, stamp.seconds), "_blank");
+
+  const menuItems = (stamp: Stamp): MenuItem[] => {
+    const own = stamp.source === "user" && !readOnly;
+    return [
+      { label: "Play from here", onSelect: () => player.current?.seekTo(stamp.seconds) },
+      { label: "Open in YouTube", onSelect: () => openInYouTube(stamp) },
+      {
+        label: "Copy link",
+        onSelect: () =>
+          void navigator.clipboard.writeText(watchUrl(video.youtubeId, stamp.seconds)).then(() => toast("Link copied")),
+      },
+      ...(own
+        ? ([
+            { kind: "sep" },
+            { label: "Edit description", onSelect: () => setEditing(stamp._id) },
+            { label: "Delete", danger: true, onSelect: () => del(stamp) },
+          ] satisfies MenuItem[])
+        : []),
+    ];
+  };
+
+  const row = (b: Stamp, own: boolean) => {
+    const time = formatDuration(b.seconds);
+    const editable = own && !readOnly;
+    return (
+      <li
+        key={b._id}
+        className="ts-row"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenu({ x: e.clientX, y: e.clientY, stamp: b });
+        }}
+      >
+        <button className="ts-time" onClick={() => player.current?.seekTo(b.seconds)} title="Play from here">
+          {time}
         </button>
-      )}
-    </li>
-  );
+        {editing === b._id ? (
+          <LabelInput initial={b.label} onSave={(label) => saveEdit(b, label)} onCancel={() => setEditing(null)} />
+        ) : (
+          <>
+            <span
+              className="ts-label"
+              title={editable ? `${b.label}\nDouble-click to edit` : b.label}
+              onDoubleClick={editable ? () => setEditing(b._id) : undefined}
+            >
+              {b.label}
+            </span>
+            {editable && (
+              <span className="ts-actions">
+                <button className="btn btn-icon btn-icon-sm" aria-label={`Edit timestamp at ${time}`} title="Edit description" onClick={() => setEditing(b._id)}>
+                  <Icon as={Pencil} size={14} />
+                </button>
+                <button className="btn btn-icon btn-icon-sm" aria-label={`Delete timestamp at ${time}`} title="Delete" onClick={() => del(b)}>
+                  <Icon as={Trash2} size={14} />
+                </button>
+              </span>
+            )}
+            <button
+              className="btn btn-icon btn-icon-sm ts-yt"
+              aria-label={`Open in YouTube at ${time}`}
+              title={`Open in YouTube at ${time}`}
+              onClick={() => openInYouTube(b)}
+            >
+              <Icon as={ExternalLink} size={14} />
+            </button>
+          </>
+        )}
+      </li>
+    );
+  };
 
   return (
     <section className="panel">
       <div className="panel-head">
         <h5>Timestamps</h5>
         {!readOnly && (
-          <button className="btn btn-ghost btn-sm" onClick={() => void capture()}>
+          <button className="btn btn-ghost btn-sm" onClick={capture}>
             <Icon as={BookmarkPlus} size={16} /> Mark this moment
           </button>
         )}
       </div>
-      {mine.length === 0 && chapters.length === 0 && (
+      {draft === null && mine.length === 0 && chapters.length === 0 && (
         <p className="text-muted small">Play the video and mark a moment to come back to it.</p>
       )}
-      {mine.length > 0 && <ul className="ts-list">{mine.map((b) => row(b, true))}</ul>}
+      {(draft !== null || mine.length > 0) && (
+        <ul className="ts-list">
+          {draft !== null && (
+            <li className="ts-row">
+              <span className="ts-time ts-time-draft">{formatDuration(draft)}</span>
+              <LabelInput initial="" onSave={saveDraft} onCancel={() => setDraft(null)} />
+            </li>
+          )}
+          {mine.map((b) => row(b, true))}
+        </ul>
+      )}
       {chapters.length > 0 && (
         <>
           <div className="kicker">Chapters</div>
@@ -201,7 +300,40 @@ function Timestamps({
         </>
       )}
       {error && <p className="field-error">{error}</p>}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.stamp)} onClose={() => setMenu(null)} />}
     </section>
+  );
+}
+
+/** Inline description field: Return or clicking away saves, Escape cancels. */
+function LabelInput({ initial, onSave, onCancel }: { initial: string; onSave: (label: string) => void; onCancel: () => void }) {
+  const [value, setValue] = useState(initial);
+  const done = useRef(false);
+  const finish = (save: boolean) => {
+    if (done.current) return;
+    done.current = true;
+    if (save) onSave(value.trim());
+    else onCancel();
+  };
+  return (
+    <input
+      className="input ts-input"
+      autoFocus
+      placeholder="Add a short description"
+      aria-label="Timestamp description"
+      value={value}
+      maxLength={200}
+      onFocus={(e) => e.currentTarget.select()}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") finish(true);
+        else if (e.key === "Escape") finish(false);
+        else return;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onBlur={() => finish(true)}
+    />
   );
 }
 
