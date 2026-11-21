@@ -167,10 +167,14 @@ export function VideoList({
     ];
   };
 
-  /** A right-click or "…" on a row acts on the selection if the row is in it, otherwise selects just the row. */
+  /**
+   * What a right-click or "…" on a row acts on: the whole selection if the row
+   * is part of it. With no video open, the menu is just for this row and
+   * nothing opens; with a video open, the row becomes the selection.
+   */
   const menuFor = (v: ListVideo): ListVideo[] => {
     if (chosen.has(v._id) && selected.length > 1) return selected;
-    onSelection(selectOnly(v._id));
+    if (selected.length > 0) onSelection(selectOnly(v._id));
     return [v];
   };
 
@@ -228,6 +232,7 @@ export function VideoList({
             role="option"
             aria-selected={chosen.has(v._id)}
             className="video-row"
+            data-menu-open={menu?.videos.some((m) => m._id === v._id) || undefined}
             tabIndex={-1}
             draggable={!inTrash}
             onDragStart={(e) => {
