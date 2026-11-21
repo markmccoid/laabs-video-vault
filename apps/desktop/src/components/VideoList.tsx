@@ -4,6 +4,7 @@ import { MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Id, type ListVideo } from "../lib/api";
 import { MOD, type View } from "../lib/views";
+import { useCommand } from "./Commands";
 import { ConfirmDialog, MoveDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
@@ -96,7 +97,24 @@ export function VideoList({
     void trash({ videoIds: [v._id] }).then(() => toast("Moved to Trash", () => restore({ videoIds: [v._id] })));
   };
 
-  // ⌘⌫ trashes the selected video; ↑/↓ move the selection.
+  const confirmDelete = (v: ListVideo) =>
+    setDialog(
+      <ConfirmDialog
+        title="Delete forever?"
+        body={`“${v.title}” and its notes and timestamps will be gone. This can't be undone.`}
+        confirm="Delete forever"
+        onClose={close}
+        onConfirm={() => deleteForever({ videoIds: [v._id] })}
+      />,
+    );
+
+  // Video › Move to Trash (⌘⌫) acts on the selected video; in Trash it deletes forever.
+  const selected = videos?.find((v) => v._id === selectedId);
+  useCommand("trash", selected && (() => (inTrash ? confirmDelete(selected) : trashVideo(selected))), {
+    label: inTrash ? "Delete Forever…" : undefined,
+  });
+
+  // ↑/↓ move the selection.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!videos?.length || (e.target as HTMLElement).closest("input, textarea, select, [role=dialog], [role=menu]")) return;
@@ -107,9 +125,6 @@ export function VideoList({
         const id = videos[next]!._id;
         onSelect(id);
         listRef.current?.querySelector(`[data-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
-      } else if (e.key === "Backspace" && (e.metaKey || e.ctrlKey) && at >= 0 && !inTrash) {
-        e.preventDefault();
-        trashVideo(videos[at]!);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -124,20 +139,7 @@ export function VideoList({
             onSelect: () => void restore({ videoIds: [v._id] }).then(() => toast("Restored")),
           },
           { kind: "sep" },
-          {
-            label: "Delete forever…",
-            danger: true,
-            onSelect: () =>
-              setDialog(
-                <ConfirmDialog
-                  title="Delete forever?"
-                  body={`“${v.title}” and its notes and timestamps will be gone. This can't be undone.`}
-                  confirm="Delete forever"
-                  onClose={close}
-                  onConfirm={() => deleteForever({ videoIds: [v._id] })}
-                />,
-              ),
-          },
+          { label: "Delete forever…", kbd: `${MOD}⌫`, danger: true, onSelect: () => confirmDelete(v) },
         ]
       : [
           { label: "Open in YouTube", onSelect: () => window.open(watchUrl(v.youtubeId), "_blank") },

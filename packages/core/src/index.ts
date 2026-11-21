@@ -5,3 +5,4 @@ export * from "./search";
 export * from "./names";
 export * from "./capture";
 export * from "./shelf";
+export * from "./fuzzy";

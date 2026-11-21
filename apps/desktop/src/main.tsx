@@ -10,6 +10,7 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { CommandsProvider } from "./components/Commands";
 import { ToastProvider } from "./components/Toast";
 import { convex, convexConfigError } from "./lib/convex";
 
@@ -22,9 +23,11 @@ createRoot(document.getElementById("root")!).render(
       </div>
     ) : (
       <ConvexAuthProvider client={convex}>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
+        <CommandsProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </CommandsProvider>
       </ConvexAuthProvider>
     )}
   </StrictMode>,
