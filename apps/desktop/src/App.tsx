@@ -1,17 +1,19 @@
-import { justAddedSince } from "@lvv/core";
-import { useConvexAuth } from "convex/react";
+import { MAX_FOLDER_DEPTH, justAddedSince } from "@lvv/core";
+import { useConvexAuth, useQuery } from "convex/react";
 import { Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AddVideoDialog } from "./components/Dialogs";
+import { CommandPalette } from "./components/CommandPalette";
+import { useCommand } from "./components/Commands";
+import { AddVideoDialog, NewFolderDialog } from "./components/Dialogs";
 import { Icon } from "./components/Icon";
 import { Sidebar } from "./components/Sidebar";
 import { SignIn } from "./components/SignIn";
 import { VideoDetail } from "./components/VideoDetail";
 import { VideoList } from "./components/VideoList";
-import type { Id } from "./lib/api";
+import { api, type Id } from "./lib/api";
 import { nextListMode, useListMode } from "./lib/listMode";
 import { useThemeChoice } from "./lib/theme";
-import { MOD, modKey, type View } from "./lib/views";
+import { MOD, type View } from "./lib/views";
 
 export function App() {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -39,6 +41,7 @@ function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[
   const [dialog, setDialog] = useState<ReactNode>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const since = useJustAddedSince();
+  const folders = useQuery(api.folders.list);
 
   // Opening a video from nothing shrinks the list; closing it restores the list.
   // Moving between videos keeps whatever mode the user picked.
@@ -68,28 +71,38 @@ function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[
     select(null);
   };
 
-  // App-wide shortcuts: ⌘N add, ⌘F search, ⌘\\ list size, Escape clears search.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (modKey(e) && e.key.toLowerCase() === "n") {
-        e.preventDefault();
-        openAdd();
-      } else if (modKey(e) && e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        // The search field lives in the list, so bring the list back first.
-        if (mode === "hidden") listMode.setMode("compact");
-        window.setTimeout(() => {
-          searchRef.current?.focus();
-          searchRef.current?.select();
-        });
-      } else if (modKey(e) && e.key === "\\" && selectedId) {
-        e.preventDefault();
-        listMode.setMode(nextListMode(mode));
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [openAdd, mode, selectedId, listMode.setMode]);
+  const focusSearch = () => {
+    // The search field lives in the list, so bring the list back first.
+    if (mode === "hidden") listMode.setMode("compact");
+    window.setTimeout(() => {
+      searchRef.current?.focus();
+      searchRef.current?.select();
+    });
+  };
+
+  // Library commands (menu bar and shortcuts; see lib/commands.ts).
+  useCommand("addVideo", openAdd);
+  useCommand("newFolder", () => {
+    const here = view.kind === "folder" ? folders?.find((f) => f._id === view.id) : undefined;
+    setDialog(
+      <NewFolderDialog
+        parent={here && here.depth < MAX_FOLDER_DEPTH - 1 ? here : undefined}
+        onClose={() => setDialog(null)}
+        onCreated={(id) => changeView({ kind: "folder", id })}
+      />,
+    );
+  });
+  useCommand("find", focusSearch);
+  useCommand("commandPalette", () =>
+    setDialog(<CommandPalette onClose={() => setDialog(null)} onView={changeView} />),
+  );
+  useCommand("goJustAdded", () => changeView({ kind: "justAdded" }));
+  useCommand("goInbox", () => changeView({ kind: "inbox" }));
+  useCommand("goTrash", () => changeView({ kind: "trash" }));
+  useCommand("toggleListSize", selectedId && (() => listMode.setMode(nextListMode(mode))));
+  useCommand("themeSystem", () => onTheme("system"), { checked: theme === "system" });
+  useCommand("themeLight", () => onTheme("light"), { checked: theme === "light" });
+  useCommand("themeDark", () => onTheme("dark"), { checked: theme === "dark" });
 
   const toolbar = (
     <div className="toolbar app-toolbar" data-tauri-drag-region>

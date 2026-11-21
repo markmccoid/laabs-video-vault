@@ -23,6 +23,14 @@ _Avoid_: Import (reserved for `.vfolder` files)
 **Share Extension**:
 The app's entry in the iOS share sheet. It shows the shared video and lets the user pick a folder (Inbox by default) and add a note, then save or cancel. Nothing is saved until the user taps Save. If the video is already saved, it says where it is and offers to update its folder and note instead. It never opens the main app.
 
+**Quick Add**:
+The Mac app's small floating panel for capturing a link with a folder and note, opened by a global hotkey from any app. The Mac counterpart of the **Share Extension** card.
+_Avoid_: Mini window, popup
+
+**Command Palette**:
+The Mac app's ⌘K search box for running any command or jumping to a folder, tag, or view.
+_Avoid_: Spotlight, launcher
+
 **Share Queue**:
 Saves from the **Share Extension** that couldn't be sent right away (offline, or an error). They wait on the device and are added to the library the next time the main app runs.
 _Avoid_: Outbox, pending list

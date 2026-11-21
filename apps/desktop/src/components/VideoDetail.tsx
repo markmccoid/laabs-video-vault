@@ -6,6 +6,7 @@ import { api, type Id, type VideoDetail as Detail } from "../lib/api";
 import { errorMessage } from "../lib/errors";
 import type { ListMode } from "../lib/listMode";
 import { MOD } from "../lib/views";
+import { useCommand } from "./Commands";
 import { MoveDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
@@ -55,6 +56,7 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
   const markOpened = useMutation(api.videos.markOpened);
   const trash = useMutation(api.videos.trash);
   const restore = useMutation(api.videos.restore);
+  const refresh = useMutation(api.videos.refreshMetadata);
   const toast = useToast();
   const player = useRef<PlayerHandle>(null);
   const [dialog, setDialog] = useState<ReactNode>(null);
@@ -64,6 +66,26 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
   useEffect(() => {
     if (!trashed) void markOpened({ videoId: video._id });
   }, [video._id, trashed, markOpened]);
+
+  const openMove = () =>
+    setDialog(<MoveDialog videoIds={[video._id]} currentFolderId={video.folderId} onClose={() => setDialog(null)} />);
+
+  // Video commands for the open video (menu bar and shortcuts; see lib/commands.ts).
+  useCommand("playPause", () => player.current?.togglePlay());
+  useCommand("copyLink", () =>
+    void navigator.clipboard.writeText(watchUrl(video.youtubeId)).then(() => toast("Link copied")),
+  );
+  useCommand("moveToFolder", !trashed && openMove);
+  useCommand("openInYouTube", () => window.open(watchUrl(video.youtubeId, player.current?.currentTime()), "_blank"));
+  useCommand(
+    "refreshMetadata",
+    !trashed &&
+      (() =>
+        void refresh({ videoId: video._id }).then(
+          () => toast("Refreshing details from YouTube"),
+          (err: unknown) => toast(errorMessage(err)),
+        )),
+  );
 
   return (
     <aside className="detail-pane" aria-label="Video">
@@ -78,12 +100,8 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
             <button
               className="btn btn-icon"
               aria-label="Move to folder"
-              title="Move to folder"
-              onClick={() =>
-                setDialog(
-                  <MoveDialog videoIds={[video._id]} currentFolderId={video.folderId} onClose={() => setDialog(null)} />,
-                )
-              }
+              title="Move to folder (⇧⌘M)"
+              onClick={openMove}
             >
               <Icon as={FolderInput} />
             </button>
@@ -178,6 +196,7 @@ function Timestamps({
     setEditing(null);
     setDraft(timestampSeconds(player.current?.currentTime() ?? 0));
   };
+  useCommand("markMoment", !readOnly && capture);
 
   const saveDraft = (label: string) => {
     const seconds = draft;

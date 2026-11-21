@@ -49,11 +49,34 @@ npm run tauri -w @lvv/desktop -- dev
 - Sign in / create account (email + password, same accounts as iOS).
 - Three panes: sidebar (Just Added, Inbox, Trash, nested folders with tones and counts, tags, appearance, account), video list, and detail.
 - Detail: embedded player (YouTube IFrame API over postMessage), seekable chapters and your timestamps, "Mark this moment", notes that autosave.
-- Add video (⌘N), search (⌘F), ↑/↓ to move through the list, ⌘⌫ to trash, right-click or "…" menus, drag a video onto a folder or the Inbox to move it. Moves and trash show a toast with Undo.
+- A native menu bar (File, Edit, View, Video, Window) built from one command list (`src/lib/commands.ts`). Components supply what each command does with `useCommand` (`src/components/Commands.tsx`). The same list handles the shortcut keys, so they work in the browser dev mode too. The page sees keys before the menu, so a shortcut like ⌘⌫ still edits text while you type in a field.
+- Right-click or "…" menus, ↑/↓ to move through the list, drag a video onto a folder or the Inbox to move it. Moves and trash show a toast with Undo; Edit › Undo (⌘Z) runs the latest one even after the toast is gone.
+- Closing the window hides it; the app keeps running in the Dock (click the icon to bring it back, ⌘Q quits).
 - Trash: restore, delete forever, empty. Just Added: dismiss one or all.
 
-## Not yet
+The embedded YouTube player works inside the Tauri webview.
 
-- Native menu bar commands and the global capture hotkey (Tauri `menu` and `global-shortcut` plugins).
-- ⌘K command palette, multi-select, tag editing, folder drag-to-reorder.
-- Check the YouTube embed inside the Tauri webview: the page origin there is `tauri://localhost`, and YouTube may reject embeds without an https Referer (as it does in the iOS WebView). If it does, serve the player page from an https origin.
+## Phase 5 remaining (agreed scope)
+
+1. ✅ **One command list** in React drives the native menu bar, the shortcut keys, and the ⌘K palette.
+2. ✅ **Native menus** (Edit Tags… stays disabled until tag editing lands):
+
+   | Menu | Items |
+   |---|---|
+   | LAABS Video Vault | About, Hide ⌘H, Quit ⌘Q |
+   | File | Add Video… ⌘N (fills from a clipboard link), New Folder… ⇧⌘N, Close Window ⌘W |
+   | Edit | Undo ⌘Z / Redo ⇧⌘Z (text, or the last move/trash), Cut/Copy/Paste/Select All (⌘A selects all videos in the list), Copy Video Link ⇧⌘C, Find ⌘F |
+   | View | Just Added ⌘1, Inbox ⌘2, Trash ⌘3, Toggle List Size ⌘\, Appearance → Light/Dark/System |
+   | Video | Play/Pause Space, Mark This Moment ⌘B, Move to Folder… ⇧⌘M, Edit Tags… ⌘T, Open in YouTube ⌘O (at the current time), Refresh Metadata, Move to Trash ⌘⌫ (Delete Forever in Trash, with confirm) |
+   | Window | Minimize ⌘M, Zoom |
+
+   ↑/↓ and Escape stay plain keys.
+3. ✅ **⌘K Command Palette** (View › Command Palette…, `src/components/CommandPalette.tsx`): every command that's available right now plus jumping to folders, tags, and views, ranked by `fuzzyRank` from `@lvv/core`. No video search yet.
+4. **Multi-select**: ⌘-click, ⇧-click, ⌘A, ⇧↑/↓. Move (menu or drag the group to a folder), tag, trash with Undo; restore and delete forever in Trash. The detail pane shows "N selected" with those actions.
+5. **Tag editing**: an autocompleting tag field on the detail pane that creates tags inline; rename and delete from the sidebar; bulk tagging from multi-select.
+6. **Window and hotkeys**: ✅ closing the window keeps the app running in the Dock (⌘Q quits). Two fixed global hotkeys (Tauri `global-shortcut`):
+   - ⇧⌘Y saves the clipboard's YouTube link to the Inbox and shows a notification: added, restored from Trash, already saved, or "No YouTube link on the clipboard".
+   - ⌥⇧⌘Y opens the **Quick Add** panel (link, folder, note), a small always-on-top window. No `tauri-nspanel`: from a full-screen app it opens on its own Space.
+7. A local `tauri build` you open yourself.
+
+Not in Phase 5: folder reordering (done later for mobile and Mac together), a Settings window, choosing hotkey actions or keys, launch at login, Quick Add over full-screen apps, video search in ⌘K, signing/notarizing, auto-update.

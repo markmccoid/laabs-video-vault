@@ -4,6 +4,8 @@ export type PlayerHandle = {
   seekTo: (seconds: number) => void;
   /** The last position the player reported, in seconds. */
   currentTime: () => number;
+  /** Play if paused or not started, pause if playing. */
+  togglePlay: () => void;
 };
 
 const ORIGIN = "https://www.youtube-nocookie.com";
@@ -17,6 +19,8 @@ export const Player = forwardRef<PlayerHandle, { youtubeId: string; start?: numb
   function Player({ youtubeId, start, title }, ref) {
     const frame = useRef<HTMLIFrameElement>(null);
     const time = useRef(start ?? 0);
+    /** The IFrame API's playerState: 1 is playing. */
+    const state = useRef(-1);
 
     const post = (msg: object) => frame.current?.contentWindow?.postMessage(JSON.stringify(msg), ORIGIN);
 
@@ -27,16 +31,24 @@ export const Player = forwardRef<PlayerHandle, { youtubeId: string; start?: numb
         time.current = seconds;
       },
       currentTime: () => time.current,
+      togglePlay: () => {
+        const playing = state.current === 1;
+        post({ event: "command", func: playing ? "pauseVideo" : "playVideo", args: [] });
+        state.current = playing ? 2 : 1;
+      },
     }));
 
     useEffect(() => {
       time.current = start ?? 0;
+      state.current = -1;
       const onMessage = (e: MessageEvent) => {
         if (e.origin !== ORIGIN || e.source !== frame.current?.contentWindow) return;
         try {
           const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
           const t = data?.info?.currentTime;
           if (typeof t === "number") time.current = t;
+          const ps = data?.info?.playerState;
+          if (typeof ps === "number") state.current = ps;
         } catch {
           // Not a player message.
         }
