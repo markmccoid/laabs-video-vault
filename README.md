@@ -126,11 +126,11 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 
 ## Phase plan
 
-0. **Foundation** ✅ monorepo, Convex schema, auth, Expo app. *Remaining: first TestFlight build.*
+0. **Foundation** ✅ monorepo, Convex schema, auth, Expo app, first TestFlight build.
 1. **Capture & library (iOS)** ✅ paste, metadata, Shorts, Inbox, detail, embedded IFrame player with "Open in YouTube" fallback, list/grid toggle.
 2. **Organization & finding** ✅ Library home, nested folders, tags, multi-select (move/tag/trash), search + filter chips, Trash view. *Remaining: paginate long lists (capped at 200 for now), reorder folders.*
-3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), Just Added view, clipboard detection, Shortcuts. *Remaining: "Dismiss" / "Clear all" for Just Added; revoke all share tokens on password reset.*
-4. **Timestamp bookmarks**: capture at the current time, seek, search, share `?t=` links.
+3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), Just Added view with Dismiss (select all to clear it), clipboard detection, Shortcuts. *Remaining: Shortcuts; revoke all share tokens on password reset.*
+4. **Timestamp bookmarks** ✅ capture at the current time, seek, search, share `?t=` links (swipe a timestamp).
 5. **Mac desktop**: Tauri v2, three-pane layout, ⌘K, drag & drop, global hotkey.
 6. **Folder export/import**: `.vfolder` file, file-type registration, import summary.
 7. **Extras**: smart folders, browser extension, Windows, widget, AI tagging, full backup.

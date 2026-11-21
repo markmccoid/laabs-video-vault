@@ -112,6 +112,19 @@ export const listJustAdded = query({
   },
 });
 
+/**
+ * Remove videos from Just Added without touching them otherwise: clearing
+ * addedAt drops them out of the by_user_addedAt range. A video that goes to
+ * the Trash and is captured again gets a new addedAt and shows up again.
+ */
+export const dismissJustAdded = mutation({
+  args: { videoIds: v.array(v.id("videos")) },
+  handler: async (ctx, { videoIds }) => {
+    const { videos } = await requireOwnedVideos(ctx, videoIds);
+    for (const video of videos) if (video.addedAt !== undefined) await ctx.db.patch(video._id, { addedAt: undefined });
+  },
+});
+
 /** Videos in one folder (or the Inbox when folderId is omitted), newest first. */
 export const listByFolder = query({
   args: { folderId: v.optional(v.id("folders")) },
