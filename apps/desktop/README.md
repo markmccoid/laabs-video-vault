@@ -72,7 +72,7 @@ The embedded YouTube player works inside the Tauri webview.
 
    ↑/↓ and Escape stay plain keys.
 3. ✅ **⌘K Command Palette** (View › Command Palette…, `src/components/CommandPalette.tsx`): every command that's available right now plus jumping to folders, tags, and views, ranked by `fuzzyRank` from `@lvv/core`. No video search yet.
-4. **Multi-select**: ⌘-click, ⇧-click, ⌘A, ⇧↑/↓. Move (menu or drag the group to a folder), tag, trash with Undo; restore and delete forever in Trash. The detail pane shows "N selected" with those actions.
+4. ✅ **Multi-select** (selection rules in `@lvv/core` `selection.ts`; bulk actions in `src/components/videoActions.tsx`): ⌘-click, ⇧-click, ⌘A, ⇧↑/↓. Move (menu or drag the group to a folder), tag, trash with Undo; restore and delete forever in Trash. The detail pane shows "N selected" with those actions.
 5. **Tag editing**: an autocompleting tag field on the detail pane that creates tags inline; rename and delete from the sidebar; bulk tagging from multi-select.
 6. **Window and hotkeys**: ✅ closing the window keeps the app running in the Dock (⌘Q quits). Two fixed global hotkeys (Tauri `global-shortcut`):
    - ⇧⌘Y saves the clipboard's YouTube link to the Inbox and shows a notification: added, restored from Trash, already saved, or "No YouTube link on the clipboard".

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { ChevronRight, Clock, Inbox, LogOut, Plus, Tag, Trash2 } from "lucide-react";
 import { useMemo, useState, type DragEvent, type ReactNode } from "react";
 import { api, type FolderDoc, type Id } from "../lib/api";
+import { moveBack, type Origin } from "../lib/moves";
 import type { ThemeChoice } from "../lib/theme";
 import { sameView, type View } from "../lib/views";
 import { ConfirmDialog, NewFolderDialog, RenameDialog } from "./Dialogs";
@@ -12,7 +13,8 @@ import { ContextMenu, type MenuItem } from "./Menu";
 import { useToast } from "./Toast";
 
 export const DRAG_TYPE = "application/x-lvv-videos";
-export type DragPayload = { videoIds: Id<"videos">[]; fromFolderId: Id<"folders"> | null };
+/** The videos being dragged and where each one is now. */
+export type DragPayload = { from: Origin[] };
 
 function countLabel(n: number | undefined, cap = 200) {
   if (!n) return null;
@@ -67,10 +69,11 @@ export function Sidebar({
       const raw = e.dataTransfer.getData(DRAG_TYPE);
       if (!raw) return;
       e.preventDefault();
-      const { videoIds, fromFolderId } = JSON.parse(raw) as DragPayload;
-      if ((fromFolderId ?? undefined) === folderId) return;
-      void move({ videoIds, folderId }).then(() =>
-        toast(`Moved to ${name}`, () => move({ videoIds, folderId: fromFolderId ?? undefined })),
+      // Videos already in this folder stay put, and Undo leaves them alone.
+      const from = (JSON.parse(raw) as DragPayload).from.filter((o) => (o.folderId ?? undefined) !== folderId);
+      if (!from.length) return;
+      void move({ videoIds: from.map((o) => o.videoId), folderId }).then(() =>
+        toast(from.length === 1 ? `Moved to ${name}` : `Moved ${from.length} videos to ${name}`, () => moveBack(move, from)),
       );
     },
     "data-drop": dropTarget === key ? "over" : dragging ? "live" : undefined,
