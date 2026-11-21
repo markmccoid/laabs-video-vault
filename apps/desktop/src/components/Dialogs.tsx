@@ -205,6 +205,7 @@ export function NewFolderDialog({
             value={parentId}
             onChange={setParentId}
             maxDepth={MAX_FOLDER_DEPTH - 2}
+            emptyLabel="Top level"
           />
         </div>
         <p className="text-muted small">Folders nest up to three levels deep.</p>
