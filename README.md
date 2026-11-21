@@ -8,7 +8,7 @@ Save, organize, and quickly find YouTube videos, with folders, tags, notes, and 
 packages/backend   Convex: schema, auth, queries/mutations, YouTube metadata action
 packages/core      Shared TS: URL parsing, chapters, durations, folder-tree rules (with tests)
 apps/mobile        Expo SDK 58 (iOS/iPad), Expo Router, routes in src/app/
-apps/desktop       Phase 5: Tauri v2 + React (placeholder)
+apps/desktop       Phase 5: Tauri v2 + React + Vite, Organic Desktop design system
 ```
 
 npm workspaces + Turborepo. Run everything from the repo root unless noted.
@@ -103,6 +103,7 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 |---|---|
 | `npm run dev:backend` | `convex dev` (push + codegen on save) |
 | `npm run dev:mobile` | Expo dev server |
+| `npm run dev:desktop` | Desktop UI in the browser at localhost:1420 (see `apps/desktop/README.md` for the native app) |
 | `npm test` | Unit tests (`@lvv/core`) |
 | `npm run typecheck` | Typecheck all packages |
 
@@ -131,6 +132,6 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 2. **Organization & finding** ✅ Library home, nested folders, tags, multi-select (move/tag/trash), search + filter chips, Trash view. *Remaining: paginate long lists (capped at 200 for now), reorder folders.*
 3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), Just Added view with Dismiss (select all to clear it), clipboard detection, Shortcuts. *Remaining: Shortcuts; revoke all share tokens on password reset.*
 4. **Timestamp bookmarks** ✅ capture at the current time, seek, search, share `?t=` links (swipe a timestamp).
-5. **Mac desktop**: Tauri v2, three-pane layout, ⌘K, drag & drop, global hotkey.
+5. **Mac desktop**: Tauri v2, three-pane layout, ⌘K, drag & drop, global hotkey. *Started: three-pane library, sign-in, add/move/trash with Undo, notes, timestamps, drag to folders, Light/Dark. Remaining: native menus, ⌘K, global hotkey, multi-select, tag editing; first native run needs Rust.*
 6. **Folder export/import**: `.vfolder` file, file-type registration, import summary.
 7. **Extras**: smart folders, browser extension, Windows, widget, AI tagging, full backup.
