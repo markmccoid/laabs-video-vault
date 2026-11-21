@@ -5,9 +5,10 @@ import { useMutation, useQuery } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Keyboard, Linking, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotesCard } from "@/components/NotesCard";
+import { TimestampsCard } from "@/components/TimestampsCard";
 import { Chip, SectionTitle } from "@/components/ui";
 import { VideoRow } from "@/components/VideoRow";
 import { YouTubePlayer, type YouTubePlayerHandle } from "@/components/YouTubePlayer";
@@ -17,7 +18,7 @@ import { confirmDestructive } from "@/lib/prompt";
 import { GUTTER, radius, type, useTheme } from "@/lib/theme";
 import { useVideoActions } from "@/lib/videoActions";
 
-/** Player (2i): embed, title, folder, tags, description, notes, chapters, more in folder. */
+/** Player (2i): embed, title, folder, tags, description, timestamps, notes, chapters, more in folder. */
 export default function Player() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -34,6 +35,8 @@ export default function Player() {
   const player = useRef<YouTubePlayerHandle>(null);
   const [time, setTime] = useState({ t: 0, d: 0 });
   const [showDescription, setShowDescription] = useState(false);
+  const scroller = useRef<ScrollViewInstance>(null);
+  const notesY = useRef(0);
 
   useEffect(() => {
     void markOpened({ videoId: id });
@@ -41,6 +44,19 @@ export default function Player() {
 
   const onTimeUpdate = useCallback((t: number, d: number) => setTime({ t, d }), []);
   const seek = useCallback((s: number) => player.current?.seekTo(s), []);
+
+  // Bring My notes up under the floating buttons once the keyboard is up, so
+  // the keyboard never covers it. The ScrollView's keyboard inset makes room.
+  const revealNotes = useCallback(() => {
+    const scroll = () =>
+      scroller.current?.scrollTo({ y: Math.max(0, notesY.current - (insets.top + 60)), animated: true });
+    if (Keyboard.isVisible()) return scroll();
+    const sub = Keyboard.addListener("keyboardDidShow", () => {
+      sub.remove();
+      scroll();
+    });
+    setTimeout(() => sub.remove(), 1500);
+  }, [insets.top]);
 
   if (video === undefined) {
     return <ActivityIndicator style={{ marginTop: 80 }} />;
@@ -62,7 +78,13 @@ export default function Player() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 }]}>
+      <ScrollView
+        ref={scroller}
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 }]}
+      >
         <YouTubePlayer ref={player} youtubeId={video.youtubeId} thumbnail={video.thumbnail} onTimeUpdate={onTimeUpdate} />
         <View style={styles.progressWrap}>
           <View style={[styles.track, { backgroundColor: theme.surface }]}>
@@ -124,7 +146,17 @@ export default function Player() {
           </Pressable>
         )}
 
-        <NotesCard videoId={id} notes={video.notes} currentTime={time.t} onSeek={seek} />
+        <TimestampsCard
+          videoId={id}
+          youtubeId={video.youtubeId}
+          bookmarks={video.bookmarks}
+          currentTime={time.t}
+          onSeek={seek}
+        />
+
+        <View onLayout={(e) => (notesY.current = e.nativeEvent.layout.y)}>
+          <NotesCard videoId={id} notes={video.notes} onFocus={revealNotes} />
+        </View>
 
         {chapters.length > 0 && (
           <View style={styles.more}>

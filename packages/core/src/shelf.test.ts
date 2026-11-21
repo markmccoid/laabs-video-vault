@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  appendNoteStamp,
   folderTone,
   highlight,
   matchesScope,
-  parseNoteStamps,
   snippet,
+  timestampLabel,
+  timestampSeconds,
   wordCount,
 } from "./shelf";
 
@@ -35,23 +35,24 @@ describe("folderTone", () => {
   });
 });
 
+describe("timestamps", () => {
+  it("tidies the description", () => {
+    expect(timestampLabel("  Fold   the\n dough ", 220)).toBe("Fold the dough");
+  });
+  it("falls back to the time when empty", () => {
+    expect(timestampLabel("   ", 220)).toBe("3:40");
+  });
+  it("caps the length", () => {
+    expect(timestampLabel("x".repeat(200), 0)).toHaveLength(120);
+  });
+  it("floors positions to whole seconds", () => {
+    expect(timestampSeconds(65.9)).toBe(65);
+    expect(timestampSeconds(-3)).toBe(0);
+    expect(timestampSeconds(Number.NaN)).toBe(0);
+  });
+});
+
 describe("notes", () => {
-  it("splits out timestamp stamps", () => {
-    expect(parseNoteStamps("[3:40] Pull pan\n[1:02:03] done")).toEqual([
-      { text: "[3:40]", seconds: 220 },
-      { text: " Pull pan\n" },
-      { text: "[1:02:03]", seconds: 3723 },
-      { text: " done" },
-    ]);
-  });
-  it("leaves plain text alone", () => {
-    expect(parseNoteStamps("no stamps [here]")).toEqual([{ text: "no stamps [here]" }]);
-  });
-  it("appends a stamp on a new line", () => {
-    expect(appendNoteStamp("", 65)).toBe("[1:05] ");
-    expect(appendNoteStamp("hi", 5)).toBe("hi\n[0:05] ");
-    expect(appendNoteStamp("hi\n", 5)).toBe("hi\n[0:05] ");
-  });
   it("counts words", () => {
     expect(wordCount("  one two\nthree ")).toBe(3);
     expect(wordCount("")).toBe(0);
@@ -62,6 +63,7 @@ describe("search matching", () => {
   const video = { title: "Cacio e pepe", description: "Starchy pasta water", tagNames: ["italian", "quick"] };
   it("respects scope", () => {
     expect(matchesScope(video, "PASTA", "all")).toBe(true);
+    expect(matchesScope(video, "only-in-notes", "all")).toBe(true);
     expect(matchesScope(video, "pasta", "title")).toBe(false);
     expect(matchesScope(video, "pasta", "description")).toBe(true);
     expect(matchesScope(video, "ital", "tags")).toBe(true);

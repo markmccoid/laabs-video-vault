@@ -7,6 +7,8 @@ export type SearchTextParts = {
   description: string;
   notes: string;
   tagNames: string[];
+  /** Descriptions of the user's own timestamps. */
+  timestampLabels?: string[];
 };
 
 /**
@@ -16,7 +18,7 @@ export type SearchTextParts = {
  * rebuild it.
  */
 export function buildSearchText(p: SearchTextParts): string {
-  return [p.title, p.channelTitle, p.tagNames.join(" "), p.notes, p.description]
+  return [p.title, p.channelTitle, p.tagNames.join(" "), p.notes, p.timestampLabels?.join("\n"), p.description]
     .filter(Boolean)
     .join("\n");
 }

@@ -1,8 +1,8 @@
 /**
- * Pure helpers for the Shelf UI (design_handoff_shelf): folder tones, note
- * timestamps, and search match highlighting.
+ * Pure helpers for the Shelf UI (design_handoff_shelf): folder tones,
+ * timestamps, notes, and search match highlighting.
  */
-import { formatDuration, parseTimestamp } from "./youtube";
+import { formatDuration } from "./youtube";
 import type { FolderLike } from "./folders";
 
 // ─── Folder tones ────────────────────────────────────────────────────────────
@@ -34,33 +34,26 @@ export function folderTone<F extends TonedFolder>(folders: F[], folderId: F["_id
   return FOLDER_TONES[Math.max(0, index) % FOLDER_TONES.length]!;
 }
 
+// ─── Timestamps ──────────────────────────────────────────────────────────────
+
+/** Longest timestamp description, in characters. */
+export const MAX_TIMESTAMP_LABEL = 120;
+
+/**
+ * Clean a timestamp description: collapse whitespace and cap the length. An
+ * empty description falls back to the time itself ("3:40").
+ */
+export function timestampLabel(label: string, seconds: number): string {
+  const clean = label.replace(/\s+/g, " ").trim().slice(0, MAX_TIMESTAMP_LABEL).trim();
+  return clean || formatDuration(seconds);
+}
+
+/** Whole, non-negative seconds for a player position. */
+export function timestampSeconds(position: number): number {
+  return Number.isFinite(position) && position > 0 ? Math.floor(position) : 0;
+}
+
 // ─── Notes ───────────────────────────────────────────────────────────────────
-
-export type NoteSegment = { text: string; seconds?: number };
-
-const STAMP = /\[(\d{1,2}(?::\d{2}){1,2})\]/g;
-
-/** Split notes into text and `[m:ss]` / `[h:mm:ss]` stamps (stamps carry `seconds`). */
-export function parseNoteStamps(notes: string): NoteSegment[] {
-  const out: NoteSegment[] = [];
-  let last = 0;
-  for (const match of notes.matchAll(STAMP)) {
-    const seconds = parseTimestamp(match[1]!);
-    if (seconds === undefined) continue;
-    if (match.index > last) out.push({ text: notes.slice(last, match.index) });
-    out.push({ text: match[0], seconds });
-    last = match.index + match[0].length;
-  }
-  if (last < notes.length) out.push({ text: notes.slice(last) });
-  return out;
-}
-
-/** Append a `[m:ss] ` stamp for `seconds` on a new line. */
-export function appendNoteStamp(notes: string, seconds: number): string {
-  const stamp = `[${formatDuration(seconds)}] `;
-  if (!notes) return stamp;
-  return notes.endsWith("\n") ? notes + stamp : `${notes}\n${stamp}`;
-}
 
 export function wordCount(text: string): number {
   const words = text.trim().match(/\S+/g);
@@ -73,10 +66,14 @@ export type SearchScope = "all" | "title" | "description" | "tags";
 
 export type MatchableVideo = { title: string; description: string; tagNames: string[] };
 
-/** Case-insensitive substring match on the fields `scope` covers. */
+/**
+ * Narrow server search results to a scope with a case-insensitive substring
+ * match. "all" keeps every result: the server already matched title, channel,
+ * tags, notes, timestamps, and description.
+ */
 export function matchesScope(video: MatchableVideo, query: string, scope: SearchScope): boolean {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
+  if (!q || scope === "all") return true;
   const has = (s: string) => s.toLowerCase().includes(q);
   const title = has(video.title);
   const description = has(video.description);
@@ -86,10 +83,8 @@ export function matchesScope(video: MatchableVideo, query: string, scope: Search
       return title;
     case "description":
       return description;
-    case "tags":
-      return tags;
     default:
-      return title || description || tags;
+      return tags;
   }
 }
 

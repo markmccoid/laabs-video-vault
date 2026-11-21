@@ -1,9 +1,8 @@
-import { appendNoteStamp, formatDuration, parseNoteStamps, wordCount } from "@lvv/core";
+import { wordCount } from "@lvv/core";
 import { useMutation } from "convex/react";
 import { SymbolView } from "expo-symbols";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
-import { Chip, PillButton } from "@/components/ui";
 import { api, type Id } from "@/lib/api";
 import { fonts, radius, type, useTheme } from "@/lib/theme";
 
@@ -15,13 +14,12 @@ type Props = {
   videoId: Id<"videos">;
   /** Server copy of the notes. */
   notes: string;
-  /** Current player position, for "Add m:ss". */
-  currentTime: number;
-  onSeek: (seconds: number) => void;
+  /** Called when the field gains focus, so the screen can scroll it above the keyboard. */
+  onFocus?: () => void;
 };
 
-/** "My notes" (2i): autosaving notes with timestamp stamps that seek the player. */
-export function NotesCard({ videoId, notes, currentTime, onSeek }: Props) {
+/** "My notes" (2i): free-form notes that autosave. Timestamps live in TimestampsCard. */
+export function NotesCard({ videoId, notes, onFocus }: Props) {
   const theme = useTheme();
   const save = useMutation(api.videos.updateNotes);
   const [text, setText] = useState(notes);
@@ -65,7 +63,6 @@ export function NotesCard({ videoId, notes, currentTime, onSeek }: Props) {
     pending.current = setTimeout(() => void flush(), SAVE_DELAY_MS);
   };
 
-  const stamps = parseNoteStamps(text).filter((s) => s.seconds !== undefined);
   const statusText =
     status === "saving" ? "Saving…" : status === "saved" ? "Saved" : status === "error" ? "Couldn't save" : "Private to you";
   const words = wordCount(text);
@@ -81,7 +78,10 @@ export function NotesCard({ videoId, notes, currentTime, onSeek }: Props) {
         multiline
         value={text}
         onChangeText={change}
-        onFocus={() => setFocused(true)}
+        onFocus={() => {
+          setFocused(true);
+          onFocus?.();
+        }}
         onBlur={() => {
           setFocused(false);
           void flush();
@@ -93,28 +93,7 @@ export function NotesCard({ videoId, notes, currentTime, onSeek }: Props) {
           { backgroundColor: theme.bg, color: theme.text, borderColor: focused ? theme.sageRing : "transparent" },
         ]}
       />
-      {stamps.length > 0 && (
-        <View style={styles.stamps}>
-          {stamps.map((s, i) => (
-            <Chip
-              key={`${s.seconds}-${i}`}
-              label={formatDuration(s.seconds!)}
-              icon="play.fill"
-              variant="sage"
-              onPress={() => onSeek(s.seconds!)}
-              accessibilityLabel={`Jump to ${formatDuration(s.seconds!)}`}
-            />
-          ))}
-        </View>
-      )}
       <View style={styles.footer}>
-        <PillButton
-          label={`Add ${formatDuration(currentTime)}`}
-          icon="clock"
-          variant="sage"
-          onPress={() => change(appendNoteStamp(text, currentTime))}
-          style={{ minHeight: 36, paddingHorizontal: 14 }}
-        />
         <Text style={[type.meta, { color: theme.muted }]}>
           {words} {words === 1 ? "word" : "words"}
         </Text>
@@ -128,6 +107,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 },
   input: {
     minHeight: 120,
+    // Grows to here, then scrolls inside, so the caret stays above the keyboard.
+    maxHeight: 260,
     borderRadius: 20,
     borderWidth: 2,
     padding: 14,
@@ -137,6 +118,5 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     textAlignVertical: "top",
   },
-  stamps: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  footer: { flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 4 },
 });

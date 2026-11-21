@@ -67,7 +67,8 @@ export const VideoRow = memo(function VideoRow({
   const selecting = selected !== undefined;
   const titleMatches = !!query && video.title.toLowerCase().includes(query.trim().toLowerCase());
   const descSnippet = query && !titleMatches ? snippet(video.description, query) : null;
-  const tags = video.tagNames;
+  // Older backends (before tagNames was added) omit it.
+  const tags = video.tagNames ?? [];
   const meta = [video.channelTitle, path].filter(Boolean).join(" · ");
 
   // The … menu is a sibling of the pressable area: a SwiftUI menu inside an

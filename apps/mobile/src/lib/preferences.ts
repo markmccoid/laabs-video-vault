@@ -5,10 +5,16 @@ import { Appearance } from "react-native";
 export type LibraryLayout = "grid" | "list" | "tree" | "columns";
 export type ThemePreference = "system" | "light" | "dark";
 
-type Prefs = { libraryLayout: LibraryLayout; theme: ThemePreference; recentSearches: string[] };
+type Prefs = {
+  libraryLayout: LibraryLayout;
+  theme: ThemePreference;
+  recentSearches: string[];
+  /** Whether the player's Timestamps section is expanded. */
+  timestampsOpen: boolean;
+};
 
 const KEY = "lvv.prefs";
-const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [] };
+const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [], timestampsOpen: true };
 
 /** Layouts the Library renders today; the others fall back to Grid. */
 export const SUPPORTED_LAYOUTS: LibraryLayout[] = ["grid", "tree"];
@@ -51,7 +57,7 @@ function usePrefs(): Prefs {
   return useSyncExternalStore(subscribe, () => prefs);
 }
 
-/** Per-device preferences: Library layout, theme, and recent searches. */
+/** Per-device preferences: Library layout, theme, recent searches, and the Timestamps section state. */
 export function usePreferences() {
   const current = usePrefs();
   return {
@@ -69,5 +75,6 @@ export function usePreferences() {
       update({ recentSearches: [q, ...rest].slice(0, 4) });
     },
     clearRecentSearches: () => update({ recentSearches: [] }),
+    setTimestampsOpen: (timestampsOpen: boolean) => update({ timestampsOpen }),
   };
 }

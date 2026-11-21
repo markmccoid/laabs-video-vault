@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, LogBox, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { authStorage, convex } from "@/lib/convex";
 import { loadPreferences } from "@/lib/preferences";
 import { useTheme } from "@/lib/theme";
@@ -20,10 +21,12 @@ export default function RootLayout() {
     void loadPreferences();
   }, []);
   return (
-    <ConvexAuthProvider client={convex} storage={authStorage}>
-      <StatusBar style="auto" />
-      <RootNavigator />
-    </ConvexAuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ConvexAuthProvider client={convex} storage={authStorage}>
+        <StatusBar style="auto" />
+        <RootNavigator />
+      </ConvexAuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
