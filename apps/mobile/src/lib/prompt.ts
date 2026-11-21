@@ -27,6 +27,16 @@ export function confirmDestructive(title: string, message: string, action: strin
   });
 }
 
+/** Ask for confirmation of a harmless action. */
+export function confirmAction(title: string, message: string, action: string) {
+  return new Promise<boolean>((resolve) => {
+    Alert.alert(title, message, [
+      { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+      { text: action, isPreferred: true, onPress: () => resolve(true) },
+    ]);
+  });
+}
+
 /** Run a mutation and show any failure in an alert. Returns false if it failed. */
 export async function attempt(title: string, run: () => Promise<unknown>): Promise<boolean> {
   try {

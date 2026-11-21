@@ -149,6 +149,25 @@ describe("POST /share/lookup", () => {
   });
 });
 
+describe("videos.dismissJustAdded", () => {
+  it("drops videos from Just Added and leaves them in the library", async () => {
+    const { t, asUser, asOther, token, folderId } = await setup();
+    const a = await (await post(t, "/share", token, { url: URL_A, folderId })).json();
+    const b = await (await post(t, "/share", token, { url: URL_B })).json();
+    const since = Date.now() - 60_000;
+
+    await expect(asOther.mutation(api.videos.dismissJustAdded, { videoIds: [a.videoId] })).rejects.toThrow();
+    await asUser.mutation(api.videos.dismissJustAdded, { videoIds: [a.videoId] });
+
+    const justAdded = await asUser.query(api.videos.listJustAdded, { since });
+    expect(justAdded.map((v) => v._id)).toEqual([b.videoId]);
+    const video = await getVideo(t, a.videoId);
+    expect(video!.folderId).toBe(folderId);
+    expect(video!.deletedAt).toBeUndefined();
+    expect(video!.addedAt).toBeUndefined();
+  });
+});
+
 describe("videos.saveShared (Share Queue)", () => {
   it("matches /share and needs a signed-in user", async () => {
     const { t, asUser, folderId } = await setup();

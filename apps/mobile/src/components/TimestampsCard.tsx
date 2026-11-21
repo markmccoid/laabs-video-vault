@@ -2,7 +2,7 @@ import { formatDuration, timestampSeconds, watchUrl } from "@lvv/core";
 import { useMutation } from "convex/react";
 import { SymbolView } from "expo-symbols";
 import { useRef } from "react";
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import ReanimatedSwipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { PillButton } from "@/components/ui";
 import { api, type Doc, type Id } from "@/lib/api";
@@ -61,6 +61,13 @@ export function TimestampsCard({ videoId, youtubeId, bookmarks, currentTime, onS
     await attempt("Couldn't save timestamp", () => update({ timestampId: stamp._id, label }));
   };
 
+  const share = (stamp: Doc<"bookmarks">) => {
+    const url = watchUrl(youtubeId, stamp.seconds);
+    // One string: with separate url and message, Copy keeps only the message.
+    const message = stamp.label ? `${stamp.label}\n${url}` : url;
+    void Share.share({ message }).catch(() => {});
+  };
+
   const del = (stamp: Doc<"bookmarks">) =>
     void attempt("Couldn't delete timestamp", () => remove({ timestampId: stamp._id }));
 
@@ -105,6 +112,7 @@ export function TimestampsCard({ videoId, youtubeId, bookmarks, currentTime, onS
                 first={i === 0}
                 onSeek={() => onSeek(s.seconds)}
                 onOpenYouTube={() => void Linking.openURL(watchUrl(youtubeId, s.seconds))}
+                onShare={() => share(s)}
                 onEdit={() => void edit(s)}
                 onDelete={() => del(s)}
               />
@@ -122,6 +130,7 @@ function TimestampRow({
   first,
   onSeek,
   onOpenYouTube,
+  onShare,
   onEdit,
   onDelete,
 }: {
@@ -129,6 +138,7 @@ function TimestampRow({
   first: boolean;
   onSeek: () => void;
   onOpenYouTube: () => void;
+  onShare: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -138,6 +148,16 @@ function TimestampRow({
 
   const actions = () => (
     <View style={styles.actions}>
+      <SwipeAction
+        label="Share"
+        icon="square.and.arrow.up"
+        color={theme.accent}
+        ink={theme.accentText}
+        onPress={() => {
+          swipe.current?.close();
+          onShare();
+        }}
+      />
       <SwipeAction
         label="Edit"
         icon="pencil"
@@ -175,7 +195,7 @@ function TimestampRow({
           onPress={onSeek}
           accessibilityRole="button"
           accessibilityLabel={`Play from ${time}: ${stamp.label}`}
-          accessibilityHint="Swipe left to edit or delete"
+          accessibilityHint="Swipe left to share, edit, or delete"
           style={({ pressed }) => [styles.seek, { opacity: pressed ? 0.6 : 1 }]}
         >
           <View style={[styles.time, { backgroundColor: theme.accentSoft }]}>
@@ -208,7 +228,7 @@ function SwipeAction({
   onPress,
 }: {
   label: string;
-  icon: "pencil" | "trash";
+  icon: "square.and.arrow.up" | "pencil" | "trash";
   color: string;
   ink: string;
   onPress: () => void;

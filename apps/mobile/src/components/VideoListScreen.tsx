@@ -4,9 +4,11 @@ import type { ComponentProps, ReactElement } from "react";
 import { VideoBrowser } from "@/components/VideoBrowser";
 import type { VideoListItem } from "@/components/VideoRow";
 import { api, type Id } from "@/lib/api";
-import { attempt, confirmDestructive } from "@/lib/prompt";
+import { attempt, confirmAction, confirmDestructive } from "@/lib/prompt";
 import { encodeIds, useSelection, type Selection } from "@/lib/selection";
 import { fonts, useTheme } from "@/lib/theme";
+
+export type ListMode = "library" | "justAdded" | "trash";
 
 export type MenuItem = {
   label: string;
@@ -20,8 +22,11 @@ export type MenuItem = {
 type Props = {
   title: string;
   videos: VideoListItem[] | undefined;
-  /** "trash" swaps the select actions for Restore / Delete and hides the row menus. */
-  mode?: "library" | "trash";
+  /**
+   * "trash" swaps the select actions for Restore / Delete and hides the row menus.
+   * "justAdded" adds Dismiss to the library actions.
+   */
+  mode?: ListMode;
   header?: ReactElement;
   emptyTitle: string;
   emptyBody?: string;
@@ -82,7 +87,7 @@ export function VideoListScreen({
       <VideoBrowser
         videos={videos}
         selection={selection}
-        menu={mode === "library"}
+        menu={mode !== "trash"}
         pathFor={pathFor}
         onPressVideo={onPressVideo}
         header={selection.selecting ? undefined : header}
@@ -107,7 +112,10 @@ export function SelectionTitle({ selection, title, largeTitle }: { selection: Se
   );
 }
 
-/** Select all / Done in the header and Move · Tag · Delete (or Restore · Delete) at the bottom. */
+/**
+ * Select all / Done in the header and Move · Tag · Delete at the bottom, with
+ * Dismiss in Just Added, or Restore · Delete in the Trash.
+ */
 export function SelectionToolbars({
   selection,
   allIds,
@@ -115,12 +123,13 @@ export function SelectionToolbars({
 }: {
   selection: Selection;
   allIds: Id<"videos">[];
-  mode?: "library" | "trash";
+  mode?: ListMode;
 }) {
   const theme = useTheme();
   const trashMany = useMutation(api.videos.trashMany);
   const restoreMany = useMutation(api.videos.restoreMany);
   const deleteForever = useMutation(api.videos.deleteForever);
+  const dismissJustAdded = useMutation(api.videos.dismissJustAdded);
   const ids = selection.ids;
   const none = ids.length === 0;
   const allSelected = !none && ids.length === allIds.length;
@@ -132,6 +141,26 @@ export function SelectionToolbars({
 
   const run = async (title: string, fn: () => Promise<unknown>) => {
     if (await attempt(title, fn)) selection.finish();
+  };
+
+  const count = (n: number) => `${n} ${n === 1 ? "video" : "videos"}`;
+
+  const trashSelected = async () => {
+    const ok = await confirmDestructive(
+      `Delete ${count(ids.length)}?`,
+      `${ids.length === 1 ? "It moves" : "They move"} to the Trash and ${ids.length === 1 ? "leaves" : "leave"} your library. You can restore from the Trash.`,
+      "Delete",
+    );
+    if (ok) await run("Couldn't move to Trash", () => trashMany({ videoIds: ids }));
+  };
+
+  const dismissSelected = async () => {
+    const ok = await confirmAction(
+      `Dismiss ${count(ids.length)}?`,
+      `This only clears ${ids.length === 1 ? "it" : "them"} from Just Added. ${ids.length === 1 ? "It stays" : "They stay"} in your library, in the same folder.`,
+      "Dismiss",
+    );
+    if (ok) await run("Couldn't dismiss", () => dismissJustAdded({ videoIds: ids }));
   };
 
   const deleteSelected = async () => {
@@ -156,7 +185,7 @@ export function SelectionToolbars({
           Done
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
-      {mode === "library" ? (
+      {mode !== "trash" ? (
         <Stack.Toolbar>
           <Stack.Toolbar.Button icon="folder" disabled={none} onPress={() => openPicker("/move")}>
             Move
@@ -165,12 +194,14 @@ export function SelectionToolbars({
           <Stack.Toolbar.Button icon="tag" disabled={none} onPress={() => openPicker("/tag-picker")}>
             Tag
           </Stack.Toolbar.Button>
+          {mode === "justAdded" && <Stack.Toolbar.Spacer />}
+          {mode === "justAdded" && (
+            <Stack.Toolbar.Button icon="checkmark.circle" disabled={none} onPress={() => void dismissSelected()}>
+              Dismiss
+            </Stack.Toolbar.Button>
+          )}
           <Stack.Toolbar.Spacer />
-          <Stack.Toolbar.Button
-            icon="trash"
-            disabled={none}
-            onPress={() => void run("Couldn't move to Trash", () => trashMany({ videoIds: ids }))}
-          >
+          <Stack.Toolbar.Button icon="trash" disabled={none} onPress={() => void trashSelected()}>
             Delete
           </Stack.Toolbar.Button>
         </Stack.Toolbar>
