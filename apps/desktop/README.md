@@ -44,6 +44,10 @@ Then run the app:
 npm run tauri -w @lvv/desktop -- dev
 ```
 
+## Release
+
+Signed, notarized DMGs go on GitHub Releases. [RELEASING.md](RELEASING.md) has the checklist. Release builds serve the app from `http://localhost:41420` rather than `tauri://localhost`, because the YouTube embed won't play without a `Referer` (error 153).
+
 ## What's here
 
 - Sign in / create account (email + password, same accounts as iOS).
@@ -77,6 +81,6 @@ The embedded YouTube player works inside the Tauri webview.
 6. **Window and hotkeys**: ✅ closing the window keeps the app running in the Dock (⌘Q quits). Two fixed global hotkeys (Tauri `global-shortcut`):
    - ⇧⌘Y saves the clipboard's YouTube link to the Inbox and shows a notification: added, restored from Trash, already saved, or "No YouTube link on the clipboard".
    - ⌥⇧⌘Y opens the **Quick Add** panel (link, folder, note), a small always-on-top window. No `tauri-nspanel`: from a full-screen app it opens on its own Space.
-7. A local `tauri build` you open yourself.
+7. ✅ A release build: signed and notarized universal DMG, `v0.1.0` on GitHub Releases ([RELEASING.md](RELEASING.md)).
 
-Not in Phase 5: folder reordering (done later for mobile and Mac together), a Settings window, choosing hotkey actions or keys, launch at login, Quick Add over full-screen apps, video search in ⌘K, signing/notarizing, auto-update.
+Not in Phase 5: folder reordering (done later for mobile and Mac together), a Settings window, choosing hotkey actions or keys, launch at login, Quick Add over full-screen apps, video search in ⌘K, auto-update.
