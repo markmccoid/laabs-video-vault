@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { api, type ListVideo } from "../lib/api";
 import { originOf } from "../lib/moves";
 import { ConfirmDialog, MoveDialog } from "./Dialogs";
+import { TAG_INPUT_ID, TagsDialog } from "./TagEditor";
 import { useToast } from "./Toast";
 
 const count = (n: number) => (n === 1 ? "1 video" : `${n} videos`);
@@ -45,6 +46,13 @@ export function useVideoActions() {
       void navigator.clipboard
         .writeText(vs.map((v) => watchUrl(v.youtubeId)).join("\n"))
         .then(() => toast(vs.length === 1 ? "Link copied" : `${vs.length} links copied`)),
+    /** The open video's tag field when it's that video, otherwise a dialog. */
+    editTags: (vs: ListVideo[]) => {
+      const field =
+        vs.length === 1 ? document.querySelector<HTMLElement>(`#${TAG_INPUT_ID}[data-video-id="${vs[0]!._id}"]`) : null;
+      if (field) field.focus();
+      else setDialog(<TagsDialog videoIds={ids(vs)} onClose={close} />);
+    },
     dismiss: (vs: ListVideo[]) =>
       void dismissMany({ videoIds: ids(vs) }).then(() => vs.length > 1 && toast(`Dismissed ${count(vs.length)}`)),
   };

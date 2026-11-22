@@ -8,6 +8,7 @@ import { originOf } from "../lib/moves";
 import type { ListMode } from "../lib/listMode";
 import { MOD } from "../lib/views";
 import { useCommand } from "./Commands";
+import { TAG_INPUT_ID, TagEditor } from "./TagEditor";
 import { MoveDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
@@ -131,7 +132,9 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
             {video.durationSec ? ` · ${formatDuration(video.durationSec)}` : ""}
             {` · ${trashed ? "In Trash" : folderName}`}
           </p>
-          {video.tags.length > 0 && (
+          {!trashed ? (
+            <TagEditor videoIds={[video._id]} inputId={TAG_INPUT_ID} />
+          ) : video.tags.length > 0 && (
             <div className="tag-row">
               {video.tags.map((t) => (
                 <span key={t._id} className="tag tag-sage-solid">

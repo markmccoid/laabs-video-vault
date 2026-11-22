@@ -10,6 +10,7 @@ import { sameView, type View } from "../lib/views";
 import { ConfirmDialog, NewFolderDialog, RenameDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
+import { useTagActions } from "./tagActions";
 import { useToast } from "./Toast";
 
 export const DRAG_TYPE = "application/x-lvv-videos";
@@ -48,7 +49,7 @@ export function Sidebar({
 
   const tree = useMemo(() => buildFolderTree(folders ?? []), [folders]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [menu, setMenu] = useState<{ x: number; y: number; folder: FolderDoc } | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const [dialog, setDialog] = useState<ReactNode>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -141,7 +142,7 @@ export function Sidebar({
           onKeyDown={(e) => e.key === "Enter" && onView({ kind: "folder", id: node._id })}
           onContextMenu={(e) => {
             e.preventDefault();
-            setMenu({ x: e.clientX, y: e.clientY, folder: node });
+            setMenu({ x: e.clientX, y: e.clientY, items: folderMenu(node) });
           }}
           {...dropHandlers(node._id, node._id, node.name)}
         >
@@ -173,6 +174,14 @@ export function Sidebar({
       </li>
     );
   };
+
+  /** Right-click on a tag. Built-in tags (Short) have no menu. */
+  const tagActions = useTagActions((tagId) => view.kind === "tag" && view.id === tagId && onView({ kind: "inbox" }));
+  const tagMenu = (tag: { _id: Id<"tags">; name: string; count: number }): MenuItem[] => [
+    { label: "Rename…", onSelect: () => tagActions.rename(tag) },
+    { kind: "sep" },
+    { label: "Delete tag…", danger: true, onSelect: () => tagActions.remove(tag) },
+  ];
 
   const navItem = (target: View, icon: typeof Inbox, label: string, count?: string | null, drop?: object) => (
     <div
@@ -231,7 +240,15 @@ export function Sidebar({
             {[...tags]
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((t) => (
-                <div key={t._id}>{navItem({ kind: "tag", id: t._id }, Tag, t.name, countLabel(t.count, 500))}</div>
+                <div
+                  key={t._id}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (!t.system) setMenu({ x: e.clientX, y: e.clientY, items: tagMenu(t) });
+                  }}
+                >
+                  {navItem({ kind: "tag", id: t._id }, Tag, t.name, countLabel(t.count, 500))}
+                </div>
               ))}
           </>
         )}
@@ -256,8 +273,9 @@ export function Sidebar({
         </div>
       </div>
 
-      {menu && <ContextMenu x={menu.x} y={menu.y} items={folderMenu(menu.folder)} onClose={() => setMenu(null)} />}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
       {dialog}
+      {tagActions.dialog}
     </aside>
   );
 }

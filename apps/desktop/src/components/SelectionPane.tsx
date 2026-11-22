@@ -1,4 +1,4 @@
-import { Copy, FolderInput, RotateCcw, Trash2, X, XCircle, type LucideIcon } from "lucide-react";
+import { Copy, FolderInput, RotateCcw, Tag, Trash2, X, XCircle, type LucideIcon } from "lucide-react";
 import type { ListVideo } from "../lib/api";
 import { Icon } from "./Icon";
 import { useVideoActions } from "./videoActions";
@@ -50,6 +50,7 @@ export function SelectionPane({
           ) : (
             <>
               {button("Move to folder…", FolderInput, () => actions.move(videos), "⇧⌘M")}
+              {button("Tags…", Tag, () => actions.editTags(videos), "⌘T")}
               {button("Copy links", Copy, () => actions.copyLinks(videos), "⇧⌘C")}
               {inJustAdded && button("Dismiss from Just Added", XCircle, () => actions.dismiss(videos))}
               {button("Move to Trash", Trash2, () => actions.trash(videos), "⌘⌫", true)}

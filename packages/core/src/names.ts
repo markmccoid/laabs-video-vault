@@ -21,10 +21,11 @@ export function checkFolderName(raw: string): NameCheck {
 
 /**
  * Tags are shown as `#name`, so a leading `#` the user typed is dropped.
- * Case is kept for display; uniqueness is by `tagKey`.
+ * Tags are always lowercase: whatever case is typed, this returns the name
+ * lowercased, and that's what gets stored.
  */
 export function checkTagName(raw: string): NameCheck {
-  const name = tidy(raw).replace(/^#+/, "").trim();
+  const name = tidy(raw).replace(/^#+/, "").trim().toLowerCase();
   if (!name) return { ok: false, reason: "Tag name can't be empty." };
   if (name.length > MAX_TAG_NAME_LENGTH) {
     return { ok: false, reason: `Tag names can be at most ${MAX_TAG_NAME_LENGTH} characters.` };

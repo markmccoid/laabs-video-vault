@@ -22,6 +22,7 @@ import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
 import { DRAG_TYPE, type DragPayload } from "./Sidebar";
 import { useToast } from "./Toast";
+import { useTagActions } from "./tagActions";
 import { useVideoActions } from "./videoActions";
 
 /** Trash is showing (search results never include trashed videos). */
@@ -54,10 +55,12 @@ export function VideoList({
   videos,
   selection,
   onSelection,
+  onView,
   toolbar,
   inert = false,
 }: {
   view: View;
+  onView: (v: View) => void;
   search: string;
   videos: ListVideo[] | undefined;
   selection: Selection;
@@ -72,6 +75,7 @@ export function VideoList({
   const dismiss = useMutation(api.videos.dismissJustAdded);
   const toast = useToast();
   const actions = useVideoActions();
+  const tagActions = useTagActions(() => onView({ kind: "inbox" }));
   const [menu, setMenu] = useState<{ x: number; y: number; videos: ListVideo[] } | null>(null);
   const [dialog, setDialog] = useState<ReactNode>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -122,6 +126,7 @@ export function VideoList({
     label: inTrash ? "Delete Forever…" : undefined,
   });
   useCommand("moveToFolder", some && !inTrash && (() => actions.move(selected)));
+  useCommand("editTags", some && !inTrash && (() => actions.editTags(selected)));
   useCommand("copyLink", some && (() => actions.copyLinks(selected)), {
     label: selected.length > 1 ? "Copy Video Links" : undefined,
   });
@@ -159,6 +164,7 @@ export function VideoList({
       { label: one ? "Copy link" : `Copy ${n} links`, kbd: "⇧⌘C", onSelect: () => actions.copyLinks(vs) },
       { kind: "sep" },
       { label: `Move${several} to folder…`, kbd: "⇧⌘M", onSelect: () => actions.move(vs) },
+      { label: "Tags…", kbd: "⌘T", onSelect: () => actions.editTags(vs) },
       ...(view.kind === "justAdded" && !q
         ? [{ label: `Dismiss${several} from Just Added`, onSelect: () => actions.dismiss(vs) }]
         : []),
@@ -178,6 +184,7 @@ export function VideoList({
     return [v];
   };
 
+  const viewedTag = view.kind === "tag" ? tags?.find((t) => t._id === view.id) : undefined;
   const headerActions =
     inTrash && videos && videos.length > 0 ? (
       <button
@@ -196,6 +203,15 @@ export function VideoList({
       >
         Empty Trash
       </button>
+    ) : view.kind === "tag" && !q && viewedTag && !viewedTag.system ? (
+      <div className="list-head-actions">
+        <button className="btn btn-secondary btn-sm" onClick={() => tagActions.rename(viewedTag)}>
+          Rename
+        </button>
+        <button className="btn btn-secondary btn-sm" data-danger onClick={() => tagActions.remove(viewedTag)}>
+          Delete
+        </button>
+      </div>
     ) : view.kind === "justAdded" && !q && videos && videos.length > 0 ? (
       <button
         className="btn btn-secondary btn-sm"
@@ -294,6 +310,7 @@ export function VideoList({
       {menu && <ContextMenu x={menu.x} y={menu.y} items={rowMenu(menu.videos)} onClose={() => setMenu(null)} />}
       {dialog}
       {actions.dialog}
+      {tagActions.dialog}
     </section>
   );
 }
@@ -307,7 +324,9 @@ function EmptyState({ view, searching }: { view: View; searching: boolean }) {
         ? ["Trash is empty", "Videos you delete wait here until you empty it."]
         : view.kind === "inbox"
           ? ["Inbox is clear", `Press ${MOD}N to add a video.`]
-          : ["No videos here yet", "Drag videos onto this folder in the sidebar to file them."];
+          : view.kind === "tag"
+            ? ["No videos with this tag", `Select videos anywhere, then press ${MOD}T to tag them.`]
+            : ["No videos here yet", "Drag videos onto this folder in the sidebar to file them."];
   return (
     <div className="empty">
       <div className="empty-blob" aria-hidden="true" />

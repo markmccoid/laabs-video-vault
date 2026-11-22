@@ -1,7 +1,7 @@
 import { checkTagName, tagKey } from "@lvv/core";
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { requireOwnedTag, requireOwnedVideos, requireUserId } from "./lib/auth";
 import { rebuildSearchText } from "./lib/search";
 import { attachTag } from "./lib/tags";
@@ -97,6 +97,25 @@ export const remove = mutation({
     for (const link of links) await ctx.db.delete(link._id);
     await ctx.db.delete(tagId);
     for (const link of links) await rebuildSearchText(ctx, link.videoId);
+  },
+});
+
+/**
+ * One-off: lowercase tags saved before names were forced to lowercase.
+ * `nameLower` was already unique per user, so no two tags collide.
+ * Run with `npx convex run tags:lowercaseExistingNames` (in packages/backend).
+ */
+export const lowercaseExistingNames = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    let changed = 0;
+    for await (const tag of ctx.db.query("tags")) {
+      if (tag.name === tag.nameLower) continue;
+      await ctx.db.patch(tag._id, { name: tag.nameLower });
+      for (const link of await linksForTag(ctx, tag.userId, tag._id)) await rebuildSearchText(ctx, link.videoId);
+      changed++;
+    }
+    return { changed };
   },
 });
 

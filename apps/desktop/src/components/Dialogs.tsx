@@ -215,11 +215,14 @@ export function RenameDialog({
   initial,
   onClose,
   onSave,
+  lowercase = false,
 }: {
   title: string;
   initial: string;
   onClose: () => void;
   onSave: (name: string) => Promise<unknown>;
+  /** Tags: show the name lowercase as it's typed, the way it will be saved. */
+  lowercase?: boolean;
 }) {
   const [name, setName] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -249,7 +252,13 @@ export function RenameDialog({
     >
       <div className="field">
         <label htmlFor="rename">Name</label>
-        <input id="rename" className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          id="rename"
+          className="input"
+          value={name}
+          autoCapitalize="none"
+          onChange={(e) => setName(lowercase ? e.target.value.toLowerCase() : e.target.value)}
+        />
       </div>
       {error && <p className="field-error">{error}</p>}
     </Dialog>

@@ -142,6 +142,7 @@ function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[
         view={view}
         search={search}
         videos={videos}
+        onView={changeView}
         selection={selection}
         onSelection={setSelection}
         toolbar={toolbar}

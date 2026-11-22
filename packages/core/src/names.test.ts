@@ -14,8 +14,8 @@ describe("checkFolderName", () => {
 });
 
 describe("checkTagName", () => {
-  it("drops leading # and keeps case", () => {
-    expect(checkTagName("##React Native")).toEqual({ ok: true, name: "React Native" });
+  it("drops leading # and lowercases", () => {
+    expect(checkTagName("##React Native")).toEqual({ ok: true, name: "react native" });
   });
 
   it("rejects empty, # inside, and too-long names", () => {
