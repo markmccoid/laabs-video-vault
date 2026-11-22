@@ -1,7 +1,7 @@
-import { MAX_FOLDER_DEPTH, justAddedSince } from "@lvv/core";
+import { MAX_FOLDER_DEPTH, emptySelection, justAddedSince, selectOnly } from "@lvv/core";
 import { useConvexAuth, useQuery } from "convex/react";
 import { Plus, Search } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { CommandPalette } from "./components/CommandPalette";
 import { useCommand } from "./components/Commands";
 import { AddVideoDialog, NewFolderDialog } from "./components/Dialogs";
@@ -9,7 +9,8 @@ import { Icon } from "./components/Icon";
 import { Sidebar } from "./components/Sidebar";
 import { SignIn } from "./components/SignIn";
 import { VideoDetail } from "./components/VideoDetail";
-import { VideoList } from "./components/VideoList";
+import { SelectionPane } from "./components/SelectionPane";
+import { VideoList, isTrashView, useVideos, type Selection } from "./components/VideoList";
 import { api, type Id } from "./lib/api";
 import { nextListMode, useListMode } from "./lib/listMode";
 import { useThemeChoice } from "./lib/theme";
@@ -36,24 +37,27 @@ function useJustAddedSince() {
 function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[0]; onTheme: (t: typeof theme) => void }) {
   const [view, setView] = useState<View>({ kind: "inbox" });
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<Id<"videos"> | null>(null);
+  const [selection, setSelection] = useState<Selection>(emptySelection);
   const listMode = useListMode();
   const [dialog, setDialog] = useState<ReactNode>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const since = useJustAddedSince();
   const folders = useQuery(api.folders.list);
+  const videos = useVideos(view, search, since);
+  const selectedId = selection.ids.length === 1 ? selection.ids[0]! : null;
+  const hasSelection = selection.ids.length > 0;
 
-  // Opening a video from nothing shrinks the list; closing it restores the list.
-  // Moving between videos keeps whatever mode the user picked.
-  const select = useCallback(
-    (id: Id<"videos"> | null) => {
-      if (id && !selectedId) listMode.focus();
-      if (!id) listMode.reset();
-      setSelectedId(id);
-    },
-    [selectedId, listMode.focus, listMode.reset],
-  );
-  const mode = selectedId ? listMode.mode : "browse";
+  // Selecting from nothing shrinks the list; clearing the selection restores it.
+  // Changing what's selected keeps whatever mode the user picked.
+  const hadSelection = useRef(hasSelection);
+  useLayoutEffect(() => {
+    if (hasSelection && !hadSelection.current) listMode.focus();
+    if (!hasSelection && hadSelection.current) listMode.reset();
+    hadSelection.current = hasSelection;
+  }, [hasSelection, listMode.focus, listMode.reset]);
+  const mode = hasSelection ? listMode.mode : "browse";
+
+  const select = useCallback((id: Id<"videos"> | null) => setSelection(id ? selectOnly(id) : emptySelection()), []);
 
   const openAdd = useCallback(() => {
     setDialog(
@@ -99,7 +103,7 @@ function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[
   useCommand("goJustAdded", () => changeView({ kind: "justAdded" }));
   useCommand("goInbox", () => changeView({ kind: "inbox" }));
   useCommand("goTrash", () => changeView({ kind: "trash" }));
-  useCommand("toggleListSize", selectedId && (() => listMode.setMode(nextListMode(mode))));
+  useCommand("toggleListSize", hasSelection && (() => listMode.setMode(nextListMode(mode))));
   useCommand("themeSystem", () => onTheme("system"), { checked: theme === "system" });
   useCommand("themeLight", () => onTheme("light"), { checked: theme === "light" });
   useCommand("themeDark", () => onTheme("dark"), { checked: theme === "dark" });
@@ -137,9 +141,10 @@ function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[
       <VideoList
         view={view}
         search={search}
-        since={since}
-        selectedId={selectedId}
-        onSelect={select}
+        videos={videos}
+        onView={changeView}
+        selection={selection}
+        onSelection={setSelection}
         toolbar={toolbar}
         inert={mode === "hidden"}
       />
@@ -149,6 +154,14 @@ function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[
           onClose={() => select(null)}
           listMode={mode}
           onListMode={listMode.setMode}
+        />
+      )}
+      {selection.ids.length > 1 && (
+        <SelectionPane
+          videos={videos?.filter((v) => selection.ids.includes(v._id)) ?? []}
+          inTrash={isTrashView(view, search)}
+          inJustAdded={!search.trim() && view.kind === "justAdded"}
+          onClear={() => select(null)}
         />
       )}
       {dialog}

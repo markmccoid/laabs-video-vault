@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api, type FolderDoc, type Id } from "../lib/api";
 import { errorMessage } from "../lib/errors";
+import { commonFolder, moveBack, type Origin } from "../lib/moves";
 import { Dialog } from "./Dialog";
 import { FolderSelect } from "./FolderSelect";
 import { useToast } from "./Toast";
@@ -100,26 +101,20 @@ export function AddVideoDialog({
   );
 }
 
-export function MoveDialog({
-  videoIds,
-  currentFolderId,
-  onClose,
-}: {
-  videoIds: Id<"videos">[];
-  currentFolderId: Id<"folders"> | undefined;
-  onClose: () => void;
-}) {
+/** Move one or more videos; Undo puts each back in its own folder. */
+export function MoveDialog({ from, onClose }: { from: Origin[]; onClose: () => void }) {
   const folders = useQuery(api.folders.list) ?? [];
   const move = useMutation(api.videos.move);
   const toast = useToast();
-  const [folderId, setFolderId] = useState<Id<"folders"> | undefined>(currentFolderId);
+  const videoIds = from.map((o) => o.videoId);
+  const [folderId, setFolderId] = useState<Id<"folders"> | undefined>(() => commonFolder(from));
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
     try {
       await move({ videoIds, folderId });
       const name = folderId ? (folders.find((f) => f._id === folderId)?.name ?? "folder") : "Inbox";
-      toast(`Moved to ${name}`, () => move({ videoIds, folderId: currentFolderId }));
+      toast(`Moved to ${name}`, () => moveBack(move, from));
       onClose();
     } catch (err) {
       setError(errorMessage(err));
@@ -220,11 +215,14 @@ export function RenameDialog({
   initial,
   onClose,
   onSave,
+  lowercase = false,
 }: {
   title: string;
   initial: string;
   onClose: () => void;
   onSave: (name: string) => Promise<unknown>;
+  /** Tags: show the name lowercase as it's typed, the way it will be saved. */
+  lowercase?: boolean;
 }) {
   const [name, setName] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -254,7 +252,13 @@ export function RenameDialog({
     >
       <div className="field">
         <label htmlFor="rename">Name</label>
-        <input id="rename" className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          id="rename"
+          className="input"
+          value={name}
+          autoCapitalize="none"
+          onChange={(e) => setName(lowercase ? e.target.value.toLowerCase() : e.target.value)}
+        />
       </div>
       {error && <p className="field-error">{error}</p>}
     </Dialog>

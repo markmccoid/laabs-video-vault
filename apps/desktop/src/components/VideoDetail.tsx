@@ -4,9 +4,11 @@ import { BookmarkPlus, ExternalLink, FolderInput, PanelLeft, Pencil, PanelLeftDa
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Id, type VideoDetail as Detail } from "../lib/api";
 import { errorMessage } from "../lib/errors";
+import { originOf } from "../lib/moves";
 import type { ListMode } from "../lib/listMode";
 import { MOD } from "../lib/views";
 import { useCommand } from "./Commands";
+import { TAG_INPUT_ID, TagEditor } from "./TagEditor";
 import { MoveDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
@@ -67,15 +69,11 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
     if (!trashed) void markOpened({ videoId: video._id });
   }, [video._id, trashed, markOpened]);
 
-  const openMove = () =>
-    setDialog(<MoveDialog videoIds={[video._id]} currentFolderId={video.folderId} onClose={() => setDialog(null)} />);
+  const openMove = () => setDialog(<MoveDialog from={[originOf(video)]} onClose={() => setDialog(null)} />);
 
-  // Video commands for the open video (menu bar and shortcuts; see lib/commands.ts).
+  // Commands for the open video (menu bar and shortcuts; see lib/commands.ts).
+  // Move, copy link and trash belong to the list, since they work on a selection.
   useCommand("playPause", () => player.current?.togglePlay());
-  useCommand("copyLink", () =>
-    void navigator.clipboard.writeText(watchUrl(video.youtubeId)).then(() => toast("Link copied")),
-  );
-  useCommand("moveToFolder", !trashed && openMove);
   useCommand("openInYouTube", () => window.open(watchUrl(video.youtubeId, player.current?.currentTime()), "_blank"));
   useCommand(
     "refreshMetadata",
@@ -134,7 +132,9 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
             {video.durationSec ? ` · ${formatDuration(video.durationSec)}` : ""}
             {` · ${trashed ? "In Trash" : folderName}`}
           </p>
-          {video.tags.length > 0 && (
+          {!trashed ? (
+            <TagEditor videoIds={[video._id]} inputId={TAG_INPUT_ID} />
+          ) : video.tags.length > 0 && (
             <div className="tag-row">
               {video.tags.map((t) => (
                 <span key={t._id} className="tag tag-sage-solid">

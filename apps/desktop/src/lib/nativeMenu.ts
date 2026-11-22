@@ -54,8 +54,9 @@ export async function installNativeMenu(onRun: (id: CommandId) => void): Promise
   const edit = await commandsFor("Edit");
   const view = await commandsFor("View");
   const video = await commandsFor("Video");
-  // Undo and Redo lead Edit; the system's text items follow them.
-  const [undo, redo, ...editRest] = edit;
+  // Undo and Redo lead Edit, then the system's text items, then Select All
+  // (ours, so ⌘A selects every video outside a text field).
+  const [undo, redo, selectAll, ...editRest] = edit;
 
   const menu = await Menu.new({
     items: [
@@ -86,7 +87,7 @@ export async function installNativeMenu(onRun: (id: CommandId) => void): Promise
           await PredefinedMenuItem.new({ item: "Cut" }),
           await PredefinedMenuItem.new({ item: "Copy" }),
           await PredefinedMenuItem.new({ item: "Paste" }),
-          await PredefinedMenuItem.new({ item: "SelectAll" }),
+          selectAll!,
           ...editRest,
         ],
       }),

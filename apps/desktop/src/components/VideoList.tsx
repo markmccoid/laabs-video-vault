@@ -1,18 +1,35 @@
-import { folderPath, formatDuration, highlight, watchUrl } from "@lvv/core";
+import {
+  folderPath,
+  formatDuration,
+  highlight,
+  pruneSelection,
+  selectAll,
+  selectClick,
+  selectOnly,
+  selectStep,
+  watchUrl,
+  type ListSelection,
+} from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
 import { MoreHorizontal } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, type Id, type ListVideo } from "../lib/api";
-import { MOD, type View } from "../lib/views";
+import { originOf } from "../lib/moves";
+import { MOD, modKey, type View } from "../lib/views";
 import { useCommand } from "./Commands";
-import { ConfirmDialog, MoveDialog } from "./Dialogs";
+import { ConfirmDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
 import { DRAG_TYPE, type DragPayload } from "./Sidebar";
 import { useToast } from "./Toast";
+import { useTagActions } from "./tagActions";
+import { useVideoActions } from "./videoActions";
+
+/** Trash is showing (search results never include trashed videos). */
+export const isTrashView = (view: View, search: string) => !search.trim() && view.kind === "trash";
 
 /** The videos for the current view, or search results while there's text. */
-function useVideos(view: View, search: string, since: number): ListVideo[] | undefined {
+export function useVideos(view: View, search: string, since: number): ListVideo[] | undefined {
   const q = search.trim();
   const s = (on: boolean) => (on && !q ? {} : "skip");
   const results = {
@@ -30,38 +47,43 @@ function plural(n: number, one: string, many = `${one}s`) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+export type Selection = ListSelection<Id<"videos">>;
+
 export function VideoList({
   view,
   search,
-  since,
-  selectedId,
-  onSelect,
+  videos,
+  selection,
+  onSelection,
+  onView,
   toolbar,
   inert = false,
 }: {
   view: View;
+  onView: (v: View) => void;
   search: string;
-  since: number;
-  selectedId: Id<"videos"> | null;
-  onSelect: (id: Id<"videos"> | null) => void;
+  videos: ListVideo[] | undefined;
+  selection: Selection;
+  onSelection: (next: Selection) => void;
   toolbar: ReactNode;
   /** True while the list is collapsed away, so focus and keys skip it. */
   inert?: boolean;
 }) {
-  const videos = useVideos(view, search, since);
   const folders = useQuery(api.folders.list);
   const tags = useQuery(api.tags.list);
-  const trash = useMutation(api.videos.trashMany);
-  const restore = useMutation(api.videos.restoreMany);
-  const deleteForever = useMutation(api.videos.deleteForever);
   const emptyTrash = useMutation(api.videos.emptyTrash);
   const dismiss = useMutation(api.videos.dismissJustAdded);
   const toast = useToast();
-  const [menu, setMenu] = useState<{ x: number; y: number; video: ListVideo } | null>(null);
+  const actions = useVideoActions();
+  const tagActions = useTagActions(() => onView({ kind: "inbox" }));
+  const [menu, setMenu] = useState<{ x: number; y: number; videos: ListVideo[] } | null>(null);
   const [dialog, setDialog] = useState<ReactNode>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const close = () => setDialog(null);
-  const inTrash = !search.trim() && view.kind === "trash";
+  const inTrash = isTrashView(view, search);
+  const order = useMemo(() => videos?.map((v) => v._id) ?? [], [videos]);
+  const chosen = new Set(selection.ids);
+  const selected = videos?.filter((v) => chosen.has(v._id)) ?? [];
 
   // Title and meta line for the header.
   const q = search.trim();
@@ -88,75 +110,81 @@ export function VideoList({
     context = "Tag";
   }
 
-  // Keep the selection on a video that's still in the list.
+  // Keep the selection to videos still in the list.
   useEffect(() => {
-    if (videos && selectedId && !videos.some((v) => v._id === selectedId)) onSelect(null);
-  }, [videos, selectedId, onSelect]);
+    if (!videos) return;
+    const next = pruneSelection(selection, order);
+    if (next !== selection) onSelection(next);
+  }, [videos, order, selection, onSelection]);
 
-  const trashVideo = (v: ListVideo) => {
-    void trash({ videoIds: [v._id] }).then(() => toast("Moved to Trash", () => restore({ videoIds: [v._id] })));
-  };
+  const reveal = (id: Id<"videos"> | null) =>
+    id && listRef.current?.querySelector(`[data-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
 
-  const confirmDelete = (v: ListVideo) =>
-    setDialog(
-      <ConfirmDialog
-        title="Delete forever?"
-        body={`“${v.title}” and its notes and timestamps will be gone. This can't be undone.`}
-        confirm="Delete forever"
-        onClose={close}
-        onConfirm={() => deleteForever({ videoIds: [v._id] })}
-      />,
-    );
-
-  // Video › Move to Trash (⌘⌫) acts on the selected video; in Trash it deletes forever.
-  const selected = videos?.find((v) => v._id === selectedId);
-  useCommand("trash", selected && (() => (inTrash ? confirmDelete(selected) : trashVideo(selected))), {
+  // Selection commands (menu bar and shortcuts). In Trash, ⌘⌫ deletes forever.
+  const some = selected.length > 0;
+  useCommand("trash", some && (() => (inTrash ? actions.deleteForever(selected) : actions.trash(selected))), {
     label: inTrash ? "Delete Forever…" : undefined,
   });
+  useCommand("moveToFolder", some && !inTrash && (() => actions.move(selected)));
+  useCommand("editTags", some && !inTrash && (() => actions.editTags(selected)));
+  useCommand("copyLink", some && (() => actions.copyLinks(selected)), {
+    label: selected.length > 1 ? "Copy Video Links" : undefined,
+  });
+  useCommand("selectAll", ({ typing }) => (typing ? document.execCommand("selectAll") : onSelection(selectAll(selection, order))));
 
-  // ↑/↓ move the selection.
+  // ↑/↓ move the selection; ⇧↑/⇧↓ extend it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!videos?.length || (e.target as HTMLElement).closest("input, textarea, select, [role=dialog], [role=menu]")) return;
-      const at = videos.findIndex((v) => v._id === selectedId);
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        const next = e.key === "ArrowDown" ? Math.min(at + 1, videos.length - 1) : Math.max(at - 1, 0);
-        const id = videos[next]!._id;
-        onSelect(id);
-        listRef.current?.querySelector(`[data-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
-      }
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      if (e.metaKey || e.ctrlKey || e.altKey || !order.length) return;
+      if ((e.target as HTMLElement).closest("input, textarea, select, [role=dialog], [role=menu]")) return;
+      e.preventDefault();
+      const next = selectStep(selection, e.key === "ArrowDown" ? 1 : -1, e.shiftKey, order);
+      onSelection(next);
+      reveal(next.cursor);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const rowMenu = (v: ListVideo): MenuItem[] =>
-    inTrash
-      ? [
-          {
-            label: "Restore",
-            onSelect: () => void restore({ videoIds: [v._id] }).then(() => toast("Restored")),
-          },
-          { kind: "sep" },
-          { label: "Delete forever…", kbd: `${MOD}⌫`, danger: true, onSelect: () => confirmDelete(v) },
-        ]
-      : [
-          { label: "Open in YouTube", onSelect: () => window.open(watchUrl(v.youtubeId), "_blank") },
-          { label: "Copy link", onSelect: () => void navigator.clipboard.writeText(watchUrl(v.youtubeId)) },
-          { kind: "sep" },
-          {
-            label: "Move to folder…",
-            onSelect: () =>
-              setDialog(<MoveDialog videoIds={[v._id]} currentFolderId={v.folderId} onClose={close} />),
-          },
-          ...(view.kind === "justAdded" && !q
-            ? [{ label: "Dismiss from Just Added", onSelect: () => void dismiss({ videoIds: [v._id] }) }]
-            : []),
-          { kind: "sep" },
-          { label: "Move to Trash", kbd: `${MOD}⌫`, danger: true, onSelect: () => trashVideo(v) },
-        ];
+  /** The right-click menu: for the whole selection when the row is part of it. */
+  const rowMenu = (vs: ListVideo[]): MenuItem[] => {
+    const n = vs.length;
+    const one = n === 1 ? vs[0]! : null;
+    const several = n > 1 ? ` ${n} videos` : "";
+    if (inTrash) {
+      return [
+        { label: `Restore${several}`, onSelect: () => actions.restore(vs) },
+        { kind: "sep" },
+        { label: `Delete${several} forever…`, kbd: `${MOD}⌫`, danger: true, onSelect: () => actions.deleteForever(vs) },
+      ];
+    }
+    return [
+      ...(one ? ([{ label: "Open in YouTube", onSelect: () => window.open(watchUrl(one.youtubeId), "_blank") }] satisfies MenuItem[]) : []),
+      { label: one ? "Copy link" : `Copy ${n} links`, kbd: "⇧⌘C", onSelect: () => actions.copyLinks(vs) },
+      { kind: "sep" },
+      { label: `Move${several} to folder…`, kbd: "⇧⌘M", onSelect: () => actions.move(vs) },
+      { label: "Tags…", kbd: "⌘T", onSelect: () => actions.editTags(vs) },
+      ...(view.kind === "justAdded" && !q
+        ? [{ label: `Dismiss${several} from Just Added`, onSelect: () => actions.dismiss(vs) }]
+        : []),
+      { kind: "sep" },
+      { label: `Move${several} to Trash`, kbd: `${MOD}⌫`, danger: true, onSelect: () => actions.trash(vs) },
+    ];
+  };
 
+  /**
+   * What a right-click or "…" on a row acts on: the whole selection if the row
+   * is part of it. With no video open, the menu is just for this row and
+   * nothing opens; with a video open, the row becomes the selection.
+   */
+  const menuFor = (v: ListVideo): ListVideo[] => {
+    if (chosen.has(v._id) && selected.length > 1) return selected;
+    if (selected.length > 0) onSelection(selectOnly(v._id));
+    return [v];
+  };
+
+  const viewedTag = view.kind === "tag" ? tags?.find((t) => t._id === view.id) : undefined;
   const headerActions =
     inTrash && videos && videos.length > 0 ? (
       <button
@@ -175,6 +203,15 @@ export function VideoList({
       >
         Empty Trash
       </button>
+    ) : view.kind === "tag" && !q && viewedTag && !viewedTag.system ? (
+      <div className="list-head-actions">
+        <button className="btn btn-secondary btn-sm" onClick={() => tagActions.rename(viewedTag)}>
+          Rename
+        </button>
+        <button className="btn btn-secondary btn-sm" data-danger onClick={() => tagActions.remove(viewedTag)}>
+          Delete
+        </button>
+      </div>
     ) : view.kind === "justAdded" && !q && videos && videos.length > 0 ? (
       <button
         className="btn btn-secondary btn-sm"
@@ -209,22 +246,25 @@ export function VideoList({
             key={v._id}
             data-id={v._id}
             role="option"
-            aria-selected={v._id === selectedId}
+            aria-selected={chosen.has(v._id)}
             className="video-row"
+            data-menu-open={menu?.videos.some((m) => m._id === v._id) || undefined}
             tabIndex={-1}
             draggable={!inTrash}
             onDragStart={(e) => {
-              const payload: DragPayload = { videoIds: [v._id], fromFolderId: v.folderId ?? null };
+              // Dragging a selected row drags the whole selection.
+              const group = chosen.has(v._id) ? selected : [v];
+              const payload: DragPayload = { from: group.map(originOf) };
               e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(payload));
-              e.dataTransfer.setData("text/uri-list", watchUrl(v.youtubeId));
+              e.dataTransfer.setData("text/uri-list", group.map((g) => watchUrl(g.youtubeId)).join("\r\n"));
               e.dataTransfer.effectAllowed = "move";
             }}
-            onClick={() => onSelect(v._id)}
+            onMouseDown={(e) => e.shiftKey && e.preventDefault()}
+            onClick={(e) => onSelection(selectClick(selection, v._id, { toggle: modKey(e), range: e.shiftKey }, order))}
             onDoubleClick={() => window.open(watchUrl(v.youtubeId), "_blank")}
             onContextMenu={(e) => {
               e.preventDefault();
-              onSelect(v._id);
-              setMenu({ x: e.clientX, y: e.clientY, video: v });
+              setMenu({ x: e.clientX, y: e.clientY, videos: menuFor(v) });
             }}
           >
             <div className="thumb">
@@ -257,9 +297,8 @@ export function VideoList({
               aria-label="More"
               onClick={(e) => {
                 e.stopPropagation();
-                onSelect(v._id);
                 const r = e.currentTarget.getBoundingClientRect();
-                setMenu({ x: r.left, y: r.bottom + 4, video: v });
+                setMenu({ x: r.left, y: r.bottom + 4, videos: menuFor(v) });
               }}
             >
               <Icon as={MoreHorizontal} />
@@ -268,8 +307,10 @@ export function VideoList({
         ))}
       </div>
 
-      {menu && <ContextMenu x={menu.x} y={menu.y} items={rowMenu(menu.video)} onClose={() => setMenu(null)} />}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={rowMenu(menu.videos)} onClose={() => setMenu(null)} />}
       {dialog}
+      {actions.dialog}
+      {tagActions.dialog}
     </section>
   );
 }
@@ -283,7 +324,9 @@ function EmptyState({ view, searching }: { view: View; searching: boolean }) {
         ? ["Trash is empty", "Videos you delete wait here until you empty it."]
         : view.kind === "inbox"
           ? ["Inbox is clear", `Press ${MOD}N to add a video.`]
-          : ["No videos here yet", "Drag videos onto this folder in the sidebar to file them."];
+          : view.kind === "tag"
+            ? ["No videos with this tag", `Select videos anywhere, then press ${MOD}T to tag them.`]
+            : ["No videos here yet", "Drag videos onto this folder in the sidebar to file them."];
   return (
     <div className="empty">
       <div className="empty-blob" aria-hidden="true" />

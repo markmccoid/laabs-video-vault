@@ -6,3 +6,4 @@ export * from "./names";
 export * from "./capture";
 export * from "./shelf";
 export * from "./fuzzy";
+export * from "./selection";

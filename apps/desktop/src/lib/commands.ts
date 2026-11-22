@@ -37,6 +37,7 @@ export const COMMANDS = [
   // Edit
   { id: "undo", label: "Undo", menu: "Edit", shortcut: { key: "z", mod: true }, inText: "native", inDialog: true },
   { id: "redo", label: "Redo", menu: "Edit", shortcut: { key: "z", mod: true, shift: true }, inText: "native", inDialog: true },
+  { id: "selectAll", label: "Select All", menu: "Edit", shortcut: { key: "a", mod: true }, inText: "native" },
   { id: "copyLink", label: "Copy Video Link", menu: "Edit", shortcut: { key: "c", mod: true, shift: true }, sep: true },
   { id: "find", label: "Find", menu: "Edit", shortcut: { key: "f", mod: true } },
   // View
