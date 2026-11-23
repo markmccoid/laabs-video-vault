@@ -1,6 +1,6 @@
-import { folderPath, formatDuration, timestampLabel, timestampSeconds, watchUrl, wordCount } from "@lvv/core";
+import { folderPath, formatDuration, resumeSeconds, timestampLabel, timestampSeconds, watchUrl, wordCount } from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
-import { BookmarkPlus, ExternalLink, FolderInput, PanelLeft, Pencil, PanelLeftDashed, PanelRight, Trash2, X, type LucideIcon } from "lucide-react";
+import { BookmarkPlus, ExternalLink, RotateCcw, FolderInput, PanelLeft, Pencil, PanelLeftDashed, PanelRight, Trash2, X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Id, type VideoDetail as Detail } from "../lib/api";
 import { errorMessage } from "../lib/errors";
@@ -15,6 +15,7 @@ import { ContextMenu, type MenuItem } from "./Menu";
 import { SpeedControl } from "./GravityWell";
 import { Player, type PlayerHandle } from "./Player";
 import { useToast } from "./Toast";
+import { progressStore, useProgressRecorder } from "../lib/watchProgress";
 
 type LayoutProps = { listMode: ListMode; onListMode: (m: ListMode) => void };
 
@@ -56,7 +57,6 @@ function ListModeSwitch({ listMode, onListMode }: LayoutProps) {
 
 function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () => void } & LayoutProps) {
   const folders = useQuery(api.folders.list);
-  const markOpened = useMutation(api.videos.markOpened);
   const trash = useMutation(api.videos.trash);
   const restore = useMutation(api.videos.restore);
   const refresh = useMutation(api.videos.refreshMetadata);
@@ -67,10 +67,13 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
   const [dialog, setDialog] = useState<ReactNode>(null);
   const trashed = video.deletedAt !== undefined;
   const folderName = video.folderId && folders ? folderPath(folders, video.folderId).join(" › ") : "Inbox";
-
-  useEffect(() => {
-    if (!trashed) void markOpened({ videoId: video._id });
-  }, [video._id, trashed, markOpened]);
+  // Resume from Watch Progress, read once (this component is keyed by video). Shorts never have any.
+  const [resumeAt] = useState(() => resumeSeconds(progressStore.get(video._id), video.isShort));
+  const progress = useProgressRecorder(video._id, !video.isShort && !trashed);
+  const onPlayingChange = (p: boolean) => {
+    setPlaying(p);
+    if (!p) progress.onPause();
+  };
 
   const openMove = () => setDialog(<MoveDialog from={[originOf(video)]} onClose={() => setDialog(null)} />);
 
@@ -126,9 +129,20 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
       </div>
 
       <div className="detail-scroll">
-        <Player ref={player} youtubeId={video.youtubeId} title={video.title} rate={rate} onPlayingChange={setPlaying} />
+        <Player
+          ref={player}
+          youtubeId={video.youtubeId}
+          start={resumeAt}
+          title={video.title}
+          rate={rate}
+          onPlayingChange={onPlayingChange}
+          onTime={progress.onTime}
+        />
         <div className="player-bar">
           <SpeedControl rate={rate} onChange={setRate} playing={playing} />
+          <button className="btn btn-ghost btn-sm" title="Play from the beginning" onClick={() => player.current?.seekTo(0)}>
+            <Icon as={RotateCcw} size={16} /> Start over
+          </button>
         </div>
 
         <div className="detail-head">

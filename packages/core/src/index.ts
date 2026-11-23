@@ -8,3 +8,5 @@ export * from "./shelf";
 export * from "./fuzzy";
 export * from "./selection";
 export * from "./speedWell";
+export * from "./watchProgress";
+export * from "./progressStore";

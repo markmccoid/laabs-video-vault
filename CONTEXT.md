@@ -41,3 +41,7 @@ _Avoid_: Spotlight, launcher
 **Share Queue**:
 Saves from the **Share Extension** that couldn't be sent right away (offline, or an error). They wait on the device and are added to the library the next time the main app runs.
 _Avoid_: Outbox, pending list
+
+**Watch Progress**:
+How far into a **Video** the user last got, kept per video and shared across their devices. Opening a video resumes from it, and library cards show it as a progress bar. An explicit start time (a Timestamp or a `?t=` link) wins over it, and watching from there updates it as usual. **Shorts** have no Watch Progress: they always start from the beginning.
+_Avoid_: Bookmark, position, resume point

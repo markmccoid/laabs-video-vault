@@ -91,7 +91,7 @@ export const VideoRow = memo(function VideoRow({
             {selected && <SymbolView name="checkmark" size={12} weight="heavy" tintColor={theme.accentText} />}
           </View>
         )}
-        <VideoThumb video={video} style={styles.thumb} />
+        <VideoThumb video={video} style={styles.thumb} videoId={video._id} />
         <View style={styles.info}>
           {pending ? (
             <View style={styles.pending}>

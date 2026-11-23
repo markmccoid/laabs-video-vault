@@ -14,6 +14,7 @@ import { VideoList, isTrashView, useVideos, type Selection } from "./components/
 import { api, type Id } from "./lib/api";
 import { nextListMode, useListMode } from "./lib/listMode";
 import { useThemeChoice } from "./lib/theme";
+import { useProgressSync } from "./lib/watchProgress";
 import { MOD, type View } from "./lib/views";
 
 export function App() {
@@ -42,6 +43,7 @@ function Library({ theme, onTheme }: { theme: ReturnType<typeof useThemeChoice>[
   const [dialog, setDialog] = useState<ReactNode>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const since = useJustAddedSince();
+  useProgressSync();
   const folders = useQuery(api.folders.list);
   const videos = useVideos(view, search, since);
   const selectedId = selection.ids.length === 1 ? selection.ids[0]! : null;

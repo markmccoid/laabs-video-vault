@@ -49,6 +49,7 @@ export default defineSchema({
     folderId: v.optional(v.id("folders")), // undefined = Inbox
     notes: v.string(),
     favorite: v.boolean(),
+    /** No longer written (docs/adr/0003). Kept so older records still validate. */
     lastOpenedAt: v.optional(v.number()),
     /** When the video was last captured (added, or restored from Trash by capturing it again). Drives Just Added. */
     addedAt: v.optional(v.number()),
@@ -89,6 +90,24 @@ export default defineSchema({
   })
     .index("by_hash", ["tokenHash"])
     .index("by_user", ["userId"]),
+
+  /**
+   * Watch Progress, one record per video (docs/adr/0003). Kept apart from
+   * videos so a save never reloads the library lists that subscribe to them.
+   * Devices read it with one-shot "changed since" requests, not subscriptions.
+   */
+  watchProgress: defineTable({
+    userId: v.id("users"),
+    videoId: v.id("videos"),
+    seconds: v.number(),
+    durationSec: v.optional(v.number()),
+    /** When the device saved it (ms). The later one wins. */
+    savedAt: v.number(),
+    /** When the server last changed it (ms). The "changed since" cursor. */
+    updatedAt: v.number(),
+  })
+    .index("by_video", ["videoId"])
+    .index("by_user_updated", ["userId", "updatedAt"]),
 
   bookmarks: defineTable({
     userId: v.id("users"),

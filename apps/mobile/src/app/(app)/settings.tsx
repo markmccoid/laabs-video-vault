@@ -15,6 +15,7 @@ import { useJustAdded } from "@/lib/justAdded";
 import { usePreferences, type LibraryLayout, type RatePicker, type ThemePreference } from "@/lib/preferences";
 import { useShareSignOut } from "@/lib/shareBridge";
 import { GUTTER, type, useTheme } from "@/lib/theme";
+import { progressStore, signOutProgress } from "@/lib/watchProgress";
 
 /** Settings (2j). */
 export default function Settings() {
@@ -235,6 +236,7 @@ function useSignOut() {
       if (!ok) return;
     }
     await share.teardown();
+    await signOutProgress();
     await signOut();
   };
 }
@@ -260,6 +262,7 @@ function useDeleteAccount() {
       return;
     }
     await share.teardown().catch(() => {});
+    progressStore.clear();
     await signOut();
   };
 

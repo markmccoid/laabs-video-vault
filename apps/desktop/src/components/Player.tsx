@@ -22,10 +22,12 @@ type Props = {
   /** Playback speed, applied once the player is ready and whenever it changes. */
   rate?: number;
   onPlayingChange?: (playing: boolean) => void;
+  /** Each position the player reports, with its duration (0 until known). */
+  onTime?: (seconds: number, duration: number) => void;
 };
 
 export const Player = forwardRef<PlayerHandle, Props>(
-  function Player({ youtubeId, start, title, rate = 1, onPlayingChange }, ref) {
+  function Player({ youtubeId, start, title, rate = 1, onPlayingChange, onTime }, ref) {
     const frame = useRef<HTMLIFrameElement>(null);
     const time = useRef(start ?? 0);
     /** The IFrame API's playerState: 1 is playing. */
@@ -37,6 +39,9 @@ export const Player = forwardRef<PlayerHandle, Props>(
     const applyRate = () => post({ event: "command", func: "setPlaybackRate", args: [rateRef.current] });
     const playingCb = useRef(onPlayingChange);
     playingCb.current = onPlayingChange;
+    const timeCb = useRef(onTime);
+    timeCb.current = onTime;
+    const duration = useRef(0);
 
     useEffect(() => {
       applyRate();
@@ -67,7 +72,12 @@ export const Player = forwardRef<PlayerHandle, Props>(
         try {
           const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
           const t = data?.info?.currentTime;
-          if (typeof t === "number") time.current = t;
+          const d = data?.info?.duration;
+          if (typeof d === "number" && d > 0) duration.current = d;
+          if (typeof t === "number") {
+            time.current = t;
+            timeCb.current?.(t, duration.current);
+          }
           // The embed forgets the rate when it (re)loads a video.
           if (data?.event === "onReady" || data?.event === "initialDelivery") applyRate();
           const ps = data?.info?.playerState;
