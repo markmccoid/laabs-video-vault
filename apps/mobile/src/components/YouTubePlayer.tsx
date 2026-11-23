@@ -108,7 +108,8 @@ function playerHtml(youtubeId: string, startSeconds: number, controls: boolean, 
 
 /**
  * Embedded YouTube player. Shows the thumbnail until tapped (so the detail
- * screen doesn't spin up a WebView for every visit), then plays inline.
+ * screen doesn't spin up a WebView for every visit), then plays inline. If the
+ * web process dies, it drops back to the thumbnail at the last position.
  * Falls back to an "Open in YouTube" card when the video can't be embedded.
  */
 export function YouTubePlayer({
@@ -127,6 +128,8 @@ export function YouTubePlayer({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<number | "load" | null>(null);
   const [resumeAt, setResumeAt] = useState(0);
+  // Bumped when the web process dies, so the next start mounts a fresh WebView.
+  const [instance, setInstance] = useState(0);
 
   // The rate at mount goes into the page; later changes go through injectJavaScript.
   const rateRef = useRef(playbackRate);
@@ -189,6 +192,19 @@ export function YouTubePlayer({
     }
   }, [onTimeUpdate, onPlayingChange]);
 
+  /**
+   * iOS (or Android) can kill the WebView's web process, usually while the app
+   * sits in the background. The WebView then shows black and ignores scripts,
+   * so go back to the thumbnail; play resumes from the last position.
+   */
+  const onProcessGone = useCallback(() => {
+    setReady(false);
+    setStart(null);
+    setResumeAt(time.current);
+    setInstance((i) => i + 1);
+    onPlayingChange?.(false);
+  }, [onPlayingChange]);
+
   const openInYouTube = () => void Linking.openURL(watchUrl(youtubeId, resumeAt));
 
   if (error !== null) {
@@ -209,7 +225,7 @@ export function YouTubePlayer({
     return (
       <Pressable
         style={styles.frame}
-        onPress={() => setStart(0)}
+        onPress={() => setStart(time.current)}
         accessibilityRole="button"
         accessibilityLabel="Play video"
       >
@@ -224,6 +240,7 @@ export function YouTubePlayer({
   return (
     <View style={styles.frame}>
       <WebView<NoExtraProps>
+        key={instance}
         ref={webview}
         source={{ html, baseUrl: APP_ORIGIN }}
         style={styles.webview}
@@ -238,6 +255,8 @@ export function YouTubePlayer({
         bounces={false}
         onMessage={onMessage}
         onError={() => setError("load")}
+        onContentProcessDidTerminate={onProcessGone}
+        onRenderProcessGone={onProcessGone}
         onShouldStartLoadWithRequest={(req) => {
           // The player iframe and its internals load freely; top-level navigation
           // (tapping the YouTube logo or title) goes to the real YouTube instead.
