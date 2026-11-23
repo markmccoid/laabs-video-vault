@@ -1,9 +1,9 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { countLabel, GroupLabel, plural, Segmented, type SymbolName } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -22,6 +22,7 @@ export default function Settings() {
   const trash = useQuery(api.videos.listTrash);
   const justAdded = useJustAdded();
   const signOut = useSignOut();
+  const deleteAccount = useDeleteAccount();
 
   const filed = data.tree.reduce((sum, f) => sum + data.count(f._id), 0);
   const total = filed + (inbox?.length ?? 0);
@@ -93,7 +94,18 @@ export default function Settings() {
       <GroupLabel>Account</GroupLabel>
       <Group>
         <Row icon="rectangle.portrait.and.arrow.right" label="Sign out" destructive onPress={() => void signOut()} chevron={false} />
+        <Divider />
+        <Row
+          icon="person.crop.circle.badge.xmark"
+          label={deleteAccount.busy ? "Deleting account…" : "Delete account"}
+          destructive
+          onPress={deleteAccount.busy ? undefined : deleteAccount.start}
+          chevron={false}
+        />
       </Group>
+      <Text style={[type.meta, styles.note, { color: theme.muted }]}>
+        Deleting your account permanently removes it and your whole library from every device.
+      </Text>
 
       <Text style={[type.meta, styles.footer, { color: theme.muted }]}>
         {appName} {version} · {plural(total, "video")} in {plural(data.folders?.length ?? 0, "folder")}
@@ -167,6 +179,43 @@ function useSignOut() {
     await share.teardown();
     await signOut();
   };
+}
+
+/**
+ * Permanently delete the account and library (users.deleteAccount), after a
+ * confirmation. Then drop the share token and Share Queue and sign out locally;
+ * the server has already ended every session.
+ */
+function useDeleteAccount() {
+  const deleteAccount = useMutation(api.users.deleteAccount);
+  const { signOut } = useAuthActions();
+  const share = useShareSignOut();
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      await deleteAccount();
+    } catch {
+      setBusy(false);
+      Alert.alert("Couldn't delete your account", "Check your connection and try again.");
+      return;
+    }
+    await share.teardown().catch(() => {});
+    await signOut();
+  };
+
+  const start = () =>
+    Alert.alert(
+      "Delete your account?",
+      "This permanently deletes your account and your whole library: every video, folder, tag, note, and timestamp, on all your devices. It can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete Account", style: "destructive", onPress: () => void run() },
+      ],
+    );
+
+  return { start, busy };
 }
 
 const styles = StyleSheet.create({
