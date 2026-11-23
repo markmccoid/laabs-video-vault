@@ -8,12 +8,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Keyboard, Linking, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotesCard } from "@/components/NotesCard";
+import { PlayerControls } from "@/components/PlayerControls";
+import { Scrubber } from "@/components/Scrubber";
 import { TimestampsCard } from "@/components/TimestampsCard";
 import { Chip, SectionTitle } from "@/components/ui";
 import { VideoRow } from "@/components/VideoRow";
 import { YouTubePlayer, type YouTubePlayerHandle } from "@/components/YouTubePlayer";
 import { api, type Id } from "@/lib/api";
 import { useFolders } from "@/lib/folders";
+import { usePreferences } from "@/lib/preferences";
 import { confirmDestructive } from "@/lib/prompt";
 import { GUTTER, radius, type, useTheme } from "@/lib/theme";
 import { useVideoActions } from "@/lib/videoActions";
@@ -34,6 +37,10 @@ export default function Player() {
   const actions = useVideoActions();
   const player = useRef<YouTubePlayerHandle>(null);
   const [time, setTime] = useState({ t: 0, d: 0 });
+  const [playing, setPlaying] = useState(false);
+  const prefs = usePreferences();
+  // Each video starts at the default speed (Settings → Player).
+  const [rate, setRate] = useState(prefs.defaultRate);
   const [showDescription, setShowDescription] = useState(false);
   const scroller = useRef<ScrollViewInstance>(null);
   const notesY = useRef(0);
@@ -43,7 +50,11 @@ export default function Player() {
   }, [id, markOpened]);
 
   const onTimeUpdate = useCallback((t: number, d: number) => setTime({ t, d }), []);
-  const seek = useCallback((s: number) => player.current?.seekTo(s), []);
+  // Show the new position right away; the player only reports time once a second.
+  const seek = useCallback((s: number, opts?: { play?: boolean }) => {
+    setTime((prev) => ({ ...prev, t: s }));
+    player.current?.seekTo(s, opts);
+  }, []);
 
   // Bring My notes up under the floating buttons once the keyboard is up, so
   // the keyboard never covers it. The ScrollView's keyboard inset makes room.
@@ -85,18 +96,35 @@ export default function Player() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 }]}
       >
-        <YouTubePlayer ref={player} youtubeId={video.youtubeId} thumbnail={video.thumbnail} onTimeUpdate={onTimeUpdate} />
-        <View style={styles.progressWrap}>
-          <View style={[styles.track, { backgroundColor: theme.surface }]}>
-            <View
-              style={[styles.fill, { backgroundColor: theme.accent, width: `${duration ? Math.min(100, (time.t / duration) * 100) : 0}%` }]}
-            />
-          </View>
-          <View style={styles.times}>
-            <Text style={[type.metaStrong, { color: theme.muted }]}>{formatDuration(time.t)}</Text>
-            <Text style={[type.metaStrong, { color: theme.muted }]}>{duration ? formatDuration(duration) : "–:––"}</Text>
-          </View>
-        </View>
+        <YouTubePlayer
+          ref={player}
+          youtubeId={video.youtubeId}
+          thumbnail={video.thumbnail}
+          onTimeUpdate={onTimeUpdate}
+          controls={prefs.youtubeControls}
+          playbackRate={rate}
+          onPlayingChange={setPlaying}
+        />
+        <Scrubber position={time.t} duration={duration} onSeek={seek} />
+        {!prefs.youtubeControls && (
+          <PlayerControls
+            playing={playing}
+            onTogglePlay={() => (playing ? player.current?.pause() : player.current?.play())}
+            rate={rate}
+            onRateChange={setRate}
+            jumpBack={prefs.jumpBack}
+            jumpForward={prefs.jumpForward}
+            onJump={(delta) => {
+              const end = duration || Number.POSITIVE_INFINITY;
+              // Keep a paused video paused; a running one keeps playing.
+              seek(Math.max(0, Math.min(end, time.t + delta)), { play: playing });
+            }}
+            onOpenInYouTube={() => {
+              player.current?.pause();
+              void Linking.openURL(watchUrl(video.youtubeId, time.t));
+            }}
+          />
+        )}
 
         <View style={styles.titleBlock}>
           <Text style={[type.title, { color: theme.text }]}>{video.title || "Loading…"}</Text>
@@ -205,10 +233,6 @@ export default function Player() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: GUTTER, gap: 16 },
-  progressWrap: { gap: 6, marginTop: -6 },
-  track: { height: 4, borderRadius: 2, overflow: "hidden" },
-  fill: { height: 4, borderRadius: 2 },
-  times: { flexDirection: "row", justifyContent: "space-between" },
   titleBlock: { gap: 4 },
   folderCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: radius.card },
   folderBadge: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
