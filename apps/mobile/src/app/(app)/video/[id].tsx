@@ -1,10 +1,10 @@
 import { Button, Host, Image as SwiftImage, Menu } from "@expo/ui/swift-ui";
 import { frame, glassEffect } from "@expo/ui/swift-ui/modifiers";
-import { formatDuration, watchUrl } from "@lvv/core";
+import { formatDuration, resumeSeconds, watchUrl } from "@lvv/core";
 import { useMutation, useQuery } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Keyboard, Linking, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotesCard } from "@/components/NotesCard";
@@ -20,6 +20,7 @@ import { usePreferences } from "@/lib/preferences";
 import { confirmDestructive } from "@/lib/prompt";
 import { GUTTER, radius, type, useTheme } from "@/lib/theme";
 import { useVideoActions } from "@/lib/videoActions";
+import { progressStore, useProgressRecorder } from "@/lib/watchProgress";
 
 /** Player (2i): embed, title, folder, tags, description, timestamps, notes, chapters, more in folder. */
 export default function Player() {
@@ -32,11 +33,14 @@ export default function Player() {
     api.videos.listByFolder,
     video ? (video.folderId ? { folderId: video.folderId } : {}) : "skip",
   );
-  const markOpened = useMutation(api.videos.markOpened);
   const refresh = useMutation(api.videos.refreshMetadata);
   const actions = useVideoActions();
   const player = useRef<YouTubePlayerHandle>(null);
-  const [time, setTime] = useState({ t: 0, d: 0 });
+  // Resume from Watch Progress. Read once per video: saves during this viewing don't move it.
+  // Shorts never have progress, so they start at 0.
+  const resumeAt = useMemo(() => resumeSeconds(progressStore.get(id), false), [id]);
+  const progress = useProgressRecorder(id, video !== undefined && !video.isShort);
+  const [time, setTime] = useState({ t: resumeAt, d: 0 });
   const [playing, setPlaying] = useState(false);
   const prefs = usePreferences();
   // Each video starts at the default speed (Settings → Player).
@@ -45,11 +49,20 @@ export default function Player() {
   const scroller = useRef<ScrollViewInstance>(null);
   const notesY = useRef(0);
 
-  useEffect(() => {
-    void markOpened({ videoId: id });
-  }, [id, markOpened]);
-
-  const onTimeUpdate = useCallback((t: number, d: number) => setTime({ t, d }), []);
+  const onTimeUpdate = useCallback(
+    (t: number, d: number) => {
+      setTime({ t, d });
+      progress.onTime(t, d);
+    },
+    [progress.onTime],
+  );
+  const onPlayingChange = useCallback(
+    (p: boolean) => {
+      setPlaying(p);
+      if (!p) progress.onPause();
+    },
+    [progress.onPause],
+  );
   // Show the new position right away; the player only reports time once a second.
   const seek = useCallback((s: number, opts?: { play?: boolean }) => {
     setTime((prev) => ({ ...prev, t: s }));
@@ -103,7 +116,8 @@ export default function Player() {
           onTimeUpdate={onTimeUpdate}
           controls={prefs.youtubeControls}
           playbackRate={rate}
-          onPlayingChange={setPlaying}
+          onPlayingChange={onPlayingChange}
+          initialPosition={resumeAt}
         />
         <Scrubber position={time.t} duration={duration} onSeek={seek} />
         {!prefs.youtubeControls && (
@@ -221,6 +235,7 @@ export default function Player() {
             label={<SwiftImage systemName="ellipsis" size={17} color={theme.text} />}
             modifiers={[frame({ width: 44, height: 44 }), glassEffect({ glass: { variant: "regular", interactive: true }, shape: "circle" })]}
           >
+            <Button label="Start over" systemImage="backward.end" onPress={() => seek(0, { play: true })} />
             <Button label="Open in YouTube" systemImage="arrow.up.right.square" onPress={() => void Linking.openURL(watchUrl(video.youtubeId, time.t))} />
             <Button label="Move to folder…" systemImage="folder" onPress={() => actions.move([id])} />
             <Button label="Edit tags…" systemImage="tag" onPress={() => actions.editTags([id])} />

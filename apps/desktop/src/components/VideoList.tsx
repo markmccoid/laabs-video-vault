@@ -2,6 +2,7 @@ import {
   folderPath,
   formatDuration,
   highlight,
+  progressFraction,
   pruneSelection,
   selectAll,
   selectClick,
@@ -24,6 +25,7 @@ import { DRAG_TYPE, type DragPayload } from "./Sidebar";
 import { useToast } from "./Toast";
 import { useTagActions } from "./tagActions";
 import { useVideoActions } from "./videoActions";
+import { useWatchProgress } from "../lib/watchProgress";
 
 /** Trash is showing (search results never include trashed videos). */
 export const isTrashView = (view: View, search: string) => !search.trim() && view.kind === "trash";
@@ -271,6 +273,7 @@ export function VideoList({
               <img className="washed" src={v.thumbnail} alt="" loading="lazy" draggable={false} />
               {v.durationSec ? <span className="duration">{formatDuration(v.durationSec)}</span> : null}
               {v.isShort && <span className="duration">Short</span>}
+              {!v.isShort && <ProgressBar videoId={v._id} durationSec={v.durationSec} />}
             </div>
             <div className="video-text">
               <div className="video-title">
@@ -312,6 +315,17 @@ export function VideoList({
       {actions.dialog}
       {tagActions.dialog}
     </section>
+  );
+}
+
+/** The thumbnail's Watch Progress bar, from this Mac's copy. */
+function ProgressBar({ videoId, durationSec }: { videoId: string; durationSec?: number }) {
+  const watched = progressFraction(useWatchProgress(videoId), durationSec);
+  if (watched === undefined) return null;
+  return (
+    <span className="progress-track" role="img" aria-label={`${Math.round(watched * 100)}% watched`}>
+      <span className="progress-fill" style={{ width: `${watched * 100}%` }} />
+    </span>
   );
 }
 

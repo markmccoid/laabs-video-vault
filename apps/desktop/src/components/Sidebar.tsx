@@ -12,6 +12,7 @@ import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
 import { useTagActions } from "./tagActions";
 import { useToast } from "./Toast";
+import { progressStore, signOutProgress } from "../lib/watchProgress";
 
 export const DRAG_TYPE = "application/x-lvv-videos";
 /** The videos being dragged and where each one is now. */
@@ -276,7 +277,7 @@ export function Sidebar({
                 x: r.left,
                 y: r.top - 8,
                 items: [
-                  { label: "Sign Out", onSelect: () => void signOut() },
+                  { label: "Sign Out", onSelect: () => void signOutProgress().then(() => signOut()) },
                   { kind: "sep" },
                   {
                     label: "Delete Account…",
@@ -290,6 +291,7 @@ export function Sidebar({
                           onClose={close}
                           onConfirm={async () => {
                             await deleteAccount();
+                            progressStore.clear();
                             // The server has ended every session; drop ours.
                             await signOut();
                           }}
@@ -302,7 +304,7 @@ export function Sidebar({
           >
             {viewer?.email ?? "Signed in"}
           </button>
-          <button className="btn btn-ghost btn-icon-sm" aria-label="Sign out" title="Sign out" onClick={() => void signOut()}>
+          <button className="btn btn-ghost btn-icon-sm" aria-label="Sign out" title="Sign out" onClick={() => void signOutProgress().then(() => signOut())}>
             <Icon as={LogOut} size={16} />
           </button>
         </div>

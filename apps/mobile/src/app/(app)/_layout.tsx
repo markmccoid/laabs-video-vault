@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { useToast } from "@/components/Toast";
 import { useShareBridge } from "@/lib/shareBridge";
 import { fonts, radius, useTheme } from "@/lib/theme";
+import { useProgressSync } from "@/lib/watchProgress";
 
 function plural(n: number, word: string) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -10,6 +11,7 @@ function plural(n: number, word: string) {
 export default function AppLayout() {
   const theme = useTheme();
   const toast = useToast();
+  useProgressSync();
   useShareBridge(({ added, dropped }) => {
     const parts = [added && `Added ${plural(added, "shared video")}`, dropped && `${plural(dropped, "link")} couldn't be added`];
     toast.show(parts.filter(Boolean).join(" · "));

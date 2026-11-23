@@ -1,23 +1,28 @@
-import { formatDuration } from "@lvv/core";
+import { formatDuration, progressFraction } from "@lvv/core";
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import type { VideoListItem } from "@/components/VideoRow";
 import { fonts, palette, radius, useTheme } from "@/lib/theme";
+import { useWatchProgress } from "@/lib/watchProgress";
 
 type Props = {
   video: Pick<VideoListItem, "thumbnail" | "durationSec" | "isShort">;
   style?: StyleProp<ViewStyle>;
   /** Show the small play disc (rows). */
   playDisc?: boolean;
+  /** Saved video's id, to show its Watch Progress bar. */
+  videoId?: string;
 };
 
 /**
  * 16:9 thumbnail with the Organic "washed" treatment, duration pill, and
  * SHORT badge. Shared by video rows, the Add sheet preview, and "More in".
  */
-export function VideoThumb({ video, style, playDisc = true }: Props) {
+export function VideoThumb({ video, style, playDisc = true, videoId }: Props) {
   const theme = useTheme();
+  const progress = useWatchProgress(videoId ?? "");
+  const watched = video.isShort ? undefined : progressFraction(progress, video.durationSec);
   return (
     <View style={[styles.wrap, { backgroundColor: theme.surface }, style]}>
       <Image source={video.thumbnail} style={styles.image} contentFit="cover" transition={150} />
@@ -29,9 +34,14 @@ export function VideoThumb({ video, style, playDisc = true }: Props) {
         </View>
       )}
       {video.durationSec !== undefined && video.durationSec > 0 && (
-        <Text style={styles.duration}>{formatDuration(video.durationSec)}</Text>
+        <Text style={[styles.duration, watched !== undefined && { bottom: 13 }]}>{formatDuration(video.durationSec)}</Text>
       )}
       {video.isShort && <Text style={[styles.badge, { backgroundColor: theme.accent }]}>SHORT</Text>}
+      {watched !== undefined && (
+        <View style={styles.track} accessibilityLabel={`${Math.round(watched * 100)}% watched`}>
+          <View style={[styles.fill, { width: `${watched * 100}%`, backgroundColor: theme.accent }]} />
+        </View>
+      )}
     </View>
   );
 }
@@ -64,6 +74,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: "hidden",
   },
+  track: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    bottom: 6,
+    height: 4,
+    borderRadius: 2,
+    overflow: "hidden",
+    backgroundColor: "rgba(245,234,216,0.55)",
+  },
+  fill: { height: "100%", borderRadius: 2 },
   badge: {
     position: "absolute",
     right: 5,

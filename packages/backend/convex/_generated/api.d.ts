@@ -24,6 +24,7 @@ import type * as tags from "../tags.js";
 import type * as timestamps from "../timestamps.js";
 import type * as users from "../users.js";
 import type * as videos from "../videos.js";
+import type * as watchProgress from "../watchProgress.js";
 import type * as youtube from "../youtube.js";
 
 import type {
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   timestamps: typeof timestamps;
   users: typeof users;
   videos: typeof videos;
+  watchProgress: typeof watchProgress;
   youtube: typeof youtube;
 }>;
 

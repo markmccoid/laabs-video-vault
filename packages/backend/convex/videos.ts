@@ -284,12 +284,14 @@ export const updateNotes = mutation({
   },
 });
 
+/**
+ * Deprecated: does nothing. App builds from before Watch Progress still call
+ * this on every open; it used to patch videos.lastOpenedAt, which reloaded
+ * every library list (docs/adr/0003). Remove once those builds are gone.
+ */
 export const markOpened = mutation({
   args: { videoId: v.id("videos") },
-  handler: async (ctx, { videoId }) => {
-    await requireOwnedVideo(ctx, videoId);
-    await ctx.db.patch(videoId, { lastOpenedAt: Date.now() });
-  },
+  handler: async () => {},
 });
 
 /** Move to Trash (soft delete). */
