@@ -11,10 +11,17 @@ type Prefs = {
   recentSearches: string[];
   /** Whether the player's Timestamps section is expanded. */
   timestampsOpen: boolean;
+  /** Show YouTube's own controls in the embedded player instead of ours. */
+  youtubeControls: boolean;
+  /** Speed every video starts at. */
+  defaultRate: number;
+  /** Seconds the player's skip back / skip forward buttons jump. */
+  jumpBack: number;
+  jumpForward: number;
 };
 
 const KEY = "lvv.prefs";
-const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [], timestampsOpen: true };
+const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [], timestampsOpen: true, youtubeControls: false, defaultRate: 1, jumpBack: 10, jumpForward: 10 };
 
 /** Layouts the Library renders today; the others fall back to Grid. */
 export const SUPPORTED_LAYOUTS: LibraryLayout[] = ["grid", "tree"];
@@ -57,7 +64,7 @@ function usePrefs(): Prefs {
   return useSyncExternalStore(subscribe, () => prefs);
 }
 
-/** Per-device preferences: Library layout, theme, recent searches, and the Timestamps section state. */
+/** Per-device preferences: Library layout, theme, recent searches, the Timestamps section state, and player settings. */
 export function usePreferences() {
   const current = usePrefs();
   return {
@@ -76,5 +83,9 @@ export function usePreferences() {
     },
     clearRecentSearches: () => update({ recentSearches: [] }),
     setTimestampsOpen: (timestampsOpen: boolean) => update({ timestampsOpen }),
+    setYoutubeControls: (youtubeControls: boolean) => update({ youtubeControls }),
+    setDefaultRate: (defaultRate: number) => update({ defaultRate }),
+    setJumpBack: (jumpBack: number) => update({ jumpBack }),
+    setJumpForward: (jumpForward: number) => update({ jumpForward }),
   };
 }

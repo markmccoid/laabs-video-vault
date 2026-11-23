@@ -1,6 +1,6 @@
 import { watchUrl } from "@lvv/core";
 import { Image } from "expo-image";
-import { type Ref, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
@@ -19,10 +19,16 @@ type NoExtraProps = Record<never, never>;
 const APP_ORIGIN = "https://com.markmccoid.laabs-video-vault";
 
 export type YouTubePlayerHandle = {
-  /** Seek to `seconds` and play. Starts the player first if it isn't running. */
-  seekTo: (seconds: number) => void;
+  /**
+   * Seek to `seconds`. Starts the player first if it isn't running. Plays
+   * afterwards unless `play` is false (a paused video then stays paused).
+   */
+  seekTo: (seconds: number, opts?: { play?: boolean }) => void;
   /** Last reported playback position in seconds (0 before playback starts). */
   getCurrentTime: () => number;
+  /** Play, starting the player first if it isn't running. */
+  play: () => void;
+  pause: () => void;
 };
 
 type Props = {
@@ -31,12 +37,19 @@ type Props = {
   ref?: Ref<YouTubePlayerHandle>;
   /** Called about once a second while the player runs. */
   onTimeUpdate?: (seconds: number, duration: number) => void;
+  /** Show YouTube's own controls over the video. Fixed when the player starts. */
+  controls?: boolean;
+  /** Playback speed, applied when the player is ready and whenever it changes. */
+  playbackRate?: number;
+  /** Called when playback starts or stops (buffering counts as playing). */
+  onPlayingChange?: (playing: boolean) => void;
 };
 
 type PlayerMessage =
   | { type: "ready" }
   | { type: "error"; code: number | "load" }
-  | { type: "time"; t: number; d: number };
+  | { type: "time"; t: number; d: number }
+  | { type: "state"; playing: boolean };
 
 /** IFrame API error codes: https://developers.google.com/youtube/iframe_api_reference#onError */
 function errorText(code: number | "load"): string {
@@ -53,12 +66,13 @@ function errorText(code: number | "load"): string {
   }
 }
 
-function playerHtml(youtubeId: string, startSeconds: number): string {
+function playerHtml(youtubeId: string, startSeconds: number, controls: boolean, rate: number): string {
   const vars = {
     playsinline: 1,
     autoplay: 1,
     rel: 0,
     fs: 1,
+    controls: controls ? 1 : 0,
     start: Math.floor(startSeconds),
     origin: APP_ORIGIN,
   };
@@ -77,11 +91,12 @@ function playerHtml(youtubeId: string, startSeconds: number): string {
       playerVars: ${JSON.stringify(vars)},
       events: {
         onReady: function(e){
-          send({type:"ready"}); e.target.playVideo();
+          send({type:"ready"}); e.target.setPlaybackRate(${rate}); e.target.playVideo();
           setInterval(function(){
             try { send({type:"time", t:player.getCurrentTime()||0, d:player.getDuration()||0}); } catch(_){}
           }, 1000);
         },
+        onStateChange: function(e){ send({type:"state", playing: e.data === 1 || e.data === 3}); },
         onError: function(e){ send({type:"error", code:e.data}); }
       }
     });
@@ -96,7 +111,15 @@ function playerHtml(youtubeId: string, startSeconds: number): string {
  * screen doesn't spin up a WebView for every visit), then plays inline.
  * Falls back to an "Open in YouTube" card when the video can't be embedded.
  */
-export function YouTubePlayer({ youtubeId, thumbnail, ref, onTimeUpdate }: Props) {
+export function YouTubePlayer({
+  youtubeId,
+  thumbnail,
+  ref,
+  onTimeUpdate,
+  controls = true,
+  playbackRate = 1,
+  onPlayingChange,
+}: Props) {
   const time = useRef(0);
   const webview = useRef<WebView<NoExtraProps>>(null);
   // `start` is fixed when the WebView mounts; later seeks go through injectJavaScript.
@@ -105,12 +128,22 @@ export function YouTubePlayer({ youtubeId, thumbnail, ref, onTimeUpdate }: Props
   const [error, setError] = useState<number | "load" | null>(null);
   const [resumeAt, setResumeAt] = useState(0);
 
-  const html = useMemo(() => (start === null ? null : playerHtml(youtubeId, start)), [youtubeId, start]);
+  // The rate at mount goes into the page; later changes go through injectJavaScript.
+  const rateRef = useRef(playbackRate);
+  rateRef.current = playbackRate;
+  const html = useMemo(
+    () => (start === null ? null : playerHtml(youtubeId, start, controls, rateRef.current)),
+    [youtubeId, start, controls],
+  );
+
+  useEffect(() => {
+    if (ready) webview.current?.injectJavaScript(`player && player.setPlaybackRate(${playbackRate}); true;`);
+  }, [ready, playbackRate]);
 
   useImperativeHandle(
     ref,
     () => ({
-      seekTo: (seconds) => {
+      seekTo: (seconds, opts) => {
         setResumeAt(seconds);
         if (start === null || error !== null) {
           setError(null);
@@ -119,10 +152,20 @@ export function YouTubePlayer({ youtubeId, thumbnail, ref, onTimeUpdate }: Props
           return;
         }
         webview.current?.injectJavaScript(
-          `player && player.seekTo(${Math.floor(seconds)}, true); player && player.playVideo(); true;`,
+          `player && player.seekTo(${Math.floor(seconds)}, true);${opts?.play === false ? "" : " player && player.playVideo();"} true;`,
         );
       },
       getCurrentTime: () => time.current,
+      play: () => {
+        if (start === null || error !== null) {
+          setError(null);
+          setReady(false);
+          setStart(time.current);
+          return;
+        }
+        webview.current?.injectJavaScript("player && player.playVideo(); true;");
+      },
+      pause: () => webview.current?.injectJavaScript("player && player.pauseVideo(); true;"),
     }),
     [start, error],
   );
@@ -135,12 +178,16 @@ export function YouTubePlayer({ youtubeId, thumbnail, ref, onTimeUpdate }: Props
       return;
     }
     if (msg.type === "ready") setReady(true);
-    if (msg.type === "error") setError(msg.code);
+    if (msg.type === "error") {
+      setError(msg.code);
+      onPlayingChange?.(false);
+    }
+    if (msg.type === "state") onPlayingChange?.(msg.playing);
     if (msg.type === "time") {
       time.current = msg.t;
       onTimeUpdate?.(msg.t, msg.d);
     }
-  }, [onTimeUpdate]);
+  }, [onTimeUpdate, onPlayingChange]);
 
   const openInYouTube = () => void Linking.openURL(watchUrl(youtubeId, resumeAt));
 

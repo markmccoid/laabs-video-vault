@@ -1,10 +1,13 @@
 import { useAuthActions } from "@convex-dev/auth/react";
+import { Host, Toggle } from "@expo/ui/swift-ui";
+import { labelsHidden, tint } from "@expo/ui/swift-ui/modifiers";
 import { useMutation, useQuery } from "convex/react";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState, type ReactNode } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { JUMP_SECONDS, RateMenu } from "@/components/PlayerControls";
 import { countLabel, GroupLabel, plural, Segmented, type SymbolName } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useFolders } from "@/lib/folders";
@@ -58,6 +61,35 @@ export default function Settings() {
           />
         </View>
       </Group>
+
+      <GroupLabel>Player</GroupLabel>
+      <Group>
+        <View style={styles.row}>
+          <SymbolView name="play.rectangle" size={18} tintColor={theme.accent} />
+          <Text style={[type.label, { color: theme.text, flex: 1, fontSize: 15 }]}>YouTube controls</Text>
+          <Host matchContents colorScheme={theme.scheme}>
+            <Toggle
+              label="YouTube controls"
+              isOn={prefs.youtubeControls}
+              onIsOnChange={prefs.setYoutubeControls}
+              modifiers={[labelsHidden(), tint(theme.accent)]}
+            />
+          </Host>
+        </View>
+        <Divider />
+        <View style={[styles.row, styles.menuRow]}>
+          <SymbolView name="gauge.with.dots.needle.50percent" size={18} tintColor={theme.accent} />
+          <Text style={[type.label, { color: theme.text, flex: 1, fontSize: 15 }]}>Default speed</Text>
+          <RateMenu rate={prefs.defaultRate} onChange={prefs.setDefaultRate} variant="plain" />
+        </View>
+        <Divider />
+        <JumpControl label="Skip back" value={prefs.jumpBack} onChange={prefs.setJumpBack} />
+        <Divider />
+        <JumpControl label="Skip forward" value={prefs.jumpForward} onChange={prefs.setJumpForward} />
+      </Group>
+      <Text style={[type.meta, styles.note, { color: theme.muted }]}>
+        Every video starts at the default speed. Off: the player shows only the video, with play, speed, and Open in YouTube below it. On: YouTube's own controls appear over the video.
+      </Text>
 
       <GroupLabel>Library</GroupLabel>
       <Group>
@@ -117,6 +149,20 @@ export default function Settings() {
 function Group({ children }: { children: ReactNode }) {
   const theme = useTheme();
   return <View style={[styles.group, { backgroundColor: theme.surface }]}>{children}</View>;
+}
+
+function JumpControl({ label, value, onChange }: { label: string; value: number; onChange: (seconds: number) => void }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.control}>
+      <Text style={[type.label, { color: theme.text, fontSize: 15 }]}>{label}</Text>
+      <Segmented<string>
+        value={String(value)}
+        onChange={(v) => onChange(Number(v))}
+        options={JUMP_SECONDS.map((s) => ({ value: String(s), label: `${s}s` }))}
+      />
+    </View>
+  );
 }
 
 function Divider() {
@@ -223,6 +269,7 @@ const styles = StyleSheet.create({
   control: { padding: 16, gap: 10 },
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 16 },
+  menuRow: { paddingRight: 8 },
   note: { marginHorizontal: GUTTER + 4, marginTop: 8 },
   explainer: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
   iconBadge: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
