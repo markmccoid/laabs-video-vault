@@ -4,6 +4,8 @@ import { Appearance } from "react-native";
 
 export type LibraryLayout = "grid" | "list" | "tree" | "columns";
 export type ThemePreference = "system" | "light" | "dark";
+/** How the player picks a speed: the native menu, or the gravity well (trial). */
+export type RatePicker = "menu" | "well";
 
 type Prefs = {
   libraryLayout: LibraryLayout;
@@ -15,13 +17,14 @@ type Prefs = {
   youtubeControls: boolean;
   /** Speed every video starts at. */
   defaultRate: number;
+  ratePicker: RatePicker;
   /** Seconds the player's skip back / skip forward buttons jump. */
   jumpBack: number;
   jumpForward: number;
 };
 
 const KEY = "lvv.prefs";
-const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [], timestampsOpen: true, youtubeControls: false, defaultRate: 1, jumpBack: 10, jumpForward: 10 };
+const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [], timestampsOpen: true, youtubeControls: false, defaultRate: 1, ratePicker: "menu", jumpBack: 10, jumpForward: 10 };
 
 /** Layouts the Library renders today; the others fall back to Grid. */
 export const SUPPORTED_LAYOUTS: LibraryLayout[] = ["grid", "tree"];
@@ -85,6 +88,7 @@ export function usePreferences() {
     setTimestampsOpen: (timestampsOpen: boolean) => update({ timestampsOpen }),
     setYoutubeControls: (youtubeControls: boolean) => update({ youtubeControls }),
     setDefaultRate: (defaultRate: number) => update({ defaultRate }),
+    setRatePicker: (ratePicker: RatePicker) => update({ ratePicker }),
     setJumpBack: (jumpBack: number) => update({ jumpBack }),
     setJumpForward: (jumpForward: number) => update({ jumpForward }),
   };
