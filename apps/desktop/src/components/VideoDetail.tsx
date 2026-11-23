@@ -12,6 +12,7 @@ import { TAG_INPUT_ID, TagEditor } from "./TagEditor";
 import { MoveDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
+import { SpeedControl } from "./GravityWell";
 import { Player, type PlayerHandle } from "./Player";
 import { useToast } from "./Toast";
 
@@ -61,6 +62,8 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
   const refresh = useMutation(api.videos.refreshMetadata);
   const toast = useToast();
   const player = useRef<PlayerHandle>(null);
+  const [rate, setRate] = useState(1);
+  const [playing, setPlaying] = useState(false);
   const [dialog, setDialog] = useState<ReactNode>(null);
   const trashed = video.deletedAt !== undefined;
   const folderName = video.folderId && folders ? folderPath(folders, video.folderId).join(" › ") : "Inbox";
@@ -123,7 +126,10 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
       </div>
 
       <div className="detail-scroll">
-        <Player ref={player} youtubeId={video.youtubeId} title={video.title} />
+        <Player ref={player} youtubeId={video.youtubeId} title={video.title} rate={rate} onPlayingChange={setPlaying} />
+        <div className="player-bar">
+          <SpeedControl rate={rate} onChange={setRate} playing={playing} />
+        </div>
 
         <div className="detail-head">
           <h4>{video.title}</h4>

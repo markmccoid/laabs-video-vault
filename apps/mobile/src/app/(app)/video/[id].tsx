@@ -112,6 +112,7 @@ export default function Player() {
             onTogglePlay={() => (playing ? player.current?.pause() : player.current?.play())}
             rate={rate}
             onRateChange={setRate}
+            ratePicker={prefs.ratePicker}
             jumpBack={prefs.jumpBack}
             jumpForward={prefs.jumpForward}
             onJump={(delta) => {

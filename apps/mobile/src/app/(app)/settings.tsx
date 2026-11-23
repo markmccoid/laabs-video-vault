@@ -12,7 +12,7 @@ import { countLabel, GroupLabel, plural, Segmented, type SymbolName } from "@/co
 import { api } from "@/lib/api";
 import { useFolders } from "@/lib/folders";
 import { useJustAdded } from "@/lib/justAdded";
-import { usePreferences, type LibraryLayout, type ThemePreference } from "@/lib/preferences";
+import { usePreferences, type LibraryLayout, type RatePicker, type ThemePreference } from "@/lib/preferences";
 import { useShareSignOut } from "@/lib/shareBridge";
 import { GUTTER, type, useTheme } from "@/lib/theme";
 
@@ -83,12 +83,24 @@ export default function Settings() {
           <RateMenu rate={prefs.defaultRate} onChange={prefs.setDefaultRate} variant="plain" />
         </View>
         <Divider />
+        <View style={styles.control}>
+          <Text style={[type.label, { color: theme.text, fontSize: 15 }]}>Speed picker</Text>
+          <Segmented<RatePicker>
+            value={prefs.ratePicker}
+            onChange={prefs.setRatePicker}
+            options={[
+              { value: "menu", label: "Menu" },
+              { value: "well", label: "Gravity well" },
+            ]}
+          />
+        </View>
+        <Divider />
         <JumpControl label="Skip back" value={prefs.jumpBack} onChange={prefs.setJumpBack} />
         <Divider />
         <JumpControl label="Skip forward" value={prefs.jumpForward} onChange={prefs.setJumpForward} />
       </Group>
       <Text style={[type.meta, styles.note, { color: theme.muted }]}>
-        Every video starts at the default speed. Off: the player shows only the video, with play, speed, and Open in YouTube below it. On: YouTube's own controls appear over the video.
+        Every video starts at the default speed. Speed picker sets what the player's speed button opens. YouTube controls off: the player shows only the video, with play, speed, and Open in YouTube below it. On: YouTube's own controls appear over the video.
       </Text>
 
       <GroupLabel>Library</GroupLabel>

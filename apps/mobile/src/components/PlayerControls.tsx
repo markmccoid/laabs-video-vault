@@ -2,7 +2,9 @@ import { Button, Host, Menu, Text as SwiftText } from "@expo/ui/swift-ui";
 import { backgroundOverlay, clipShape, font, foregroundStyle, frame, monospacedDigit } from "@expo/ui/swift-ui/modifiers";
 import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
+import { GravityWellButton } from "@/components/GravityWell";
 import { PillButton, type SymbolName } from "@/components/ui";
+import type { RatePicker } from "@/lib/preferences";
 import { useTheme } from "@/lib/theme";
 
 /** 0.7× to 2.0× in 0.1 steps. */
@@ -61,6 +63,8 @@ type Props = {
   onTogglePlay: () => void;
   rate: number;
   onRateChange: (rate: number) => void;
+  /** Which speed picker the pill opens (Settings → Player). */
+  ratePicker?: RatePicker;
   jumpBack: number;
   jumpForward: number;
   /** Seek by a signed number of seconds. */
@@ -72,7 +76,7 @@ type Props = {
  * Our controls under the player, used when YouTube's own controls are hidden
  * (Settings → Player). Seeking to a point is the Scrubber above.
  */
-export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, jumpBack, jumpForward, onJump, onOpenInYouTube }: Props) {
+export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, ratePicker = "menu", jumpBack, jumpForward, onJump, onOpenInYouTube }: Props) {
   const theme = useTheme();
   return (
     <View style={styles.row}>
@@ -89,7 +93,11 @@ export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, jump
         <JumpButton symbol={jumpSymbol("forward", jumpForward)} label={`Forward ${jumpForward} seconds`} onPress={() => onJump(jumpForward)} />
       </View>
 
-      <RateMenu rate={rate} onChange={onRateChange} />
+      {ratePicker === "well" ? (
+        <GravityWellButton rate={rate} onChange={onRateChange} playing={playing} />
+      ) : (
+        <RateMenu rate={rate} onChange={onRateChange} />
+      )}
 
       <View style={{ flex: 1 }} />
 

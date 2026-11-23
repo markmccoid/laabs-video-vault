@@ -1,4 +1,4 @@
-/* App layout on top of the Organic component layer. Tokens only: no raw hex. */
+/* App layout on top of the Organic component layer. Tokens only: no raw hex (except the gravity well's own palette). */
 
 html, body, #root { height: 100%; }
 body { overflow: hidden; -webkit-font-smoothing: antialiased; cursor: default; user-select: none; -webkit-user-select: none; }
@@ -124,6 +124,42 @@ mark { background: var(--color-accent-300); color: inherit; border-radius: 3px; 
 .detail-scroll > * { max-width: calc((100vh - 140px) * 16 / 9); margin-inline: auto; }
 .player { aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface); box-shadow: var(--shadow-sm); }
 .player iframe { width: 100%; height: 100%; border: 0; display: block; }
+.player-bar { display: flex; align-items: center; gap: var(--space-2); padding-top: var(--space-2); }
+
+/* ── Speed: gravity well (trial) ────────────────────────────────────
+   The well is its own dark "space" in both themes, so it carries its own
+   palette here instead of theme tokens. */
+.speed-control { position: relative; }
+.speed-btn { min-width: 64px; justify-content: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.speed-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; min-width: 0; width: 292px; padding: var(--space-3); gap: var(--space-2); align-items: center; }
+.speed-hint { text-align: center; margin: 0; font-size: 12px; }
+.gwell { --well-slow: #38bdf8; --well-normal: #f4f4f5; --well-brisk: #fbbf24; --well-turbo: #ef4444;
+  display: grid; justify-items: center; gap: var(--space-2); }
+.gwell-svg { display: block; cursor: grab; touch-action: none; border-radius: 50%; outline-offset: 3px; --tone: var(--well-normal); }
+.gwell-svg.dragging { cursor: grabbing; }
+.band-slow { --tone: var(--well-slow); }
+.band-normal { --tone: var(--well-normal); }
+.band-brisk { --tone: var(--well-brisk); }
+.band-turbo { --tone: var(--well-turbo); }
+.gwell-bg-0 { stop-color: #27272a; stop-opacity: 0.6; }
+.gwell-bg-1 { stop-color: #09090b; stop-opacity: 0.95; }
+.gwell-bg-2 { stop-color: #09090b; }
+.gwell-rim { stroke: #3f3f46; stroke-opacity: 0.65; }
+.gwell-ring { fill: none; stroke: #71717a; stroke-width: 0.75; stroke-opacity: 0.3; }
+.gwell-ring.normal { stroke: #fff; stroke-opacity: 0.35; stroke-dasharray: 4 4; stroke-width: 1; }
+.gwell-ring.active { stroke: var(--tone); stroke-opacity: 0.9; stroke-width: 1.75; }
+.gwell-mark { fill: #a1a1aa; fill-opacity: 0.8; font: 600 9px var(--font-body); text-anchor: middle; pointer-events: none; }
+.gwell-mark.normal { fill: #f4f4f5; }
+.gwell-mark.turbo { fill: #f87171; }
+.gwell-tether { stroke: var(--tone); stroke-opacity: 0.28; }
+.gwell-tone { fill: var(--tone); transition: fill 150ms; }
+.gwell-glow { fill-opacity: 0.22; transition: r 150ms; }
+.gwell-svg.dragging .gwell-glow { r: 18px; }
+.gwell-sat-dot { fill: #09090b; }
+.gwell-core { fill: #18181b; stroke: var(--tone); stroke-width: 1.5; transition: stroke 150ms; }
+.gwell-core-text { fill: #fff; font: 700 13px var(--font-body); text-anchor: middle; font-variant-numeric: tabular-nums; pointer-events: none; }
+.gwell-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gwell-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tone); }
 .detail-head { padding: var(--space-4) var(--space-1) 0; }
 .detail-head h4 { margin-bottom: var(--space-1); line-height: 1.2; }
 .panel { margin-top: var(--space-4); padding: var(--space-3) var(--space-4) var(--space-4); border-radius: var(--radius-lg); background: var(--color-surface); }
