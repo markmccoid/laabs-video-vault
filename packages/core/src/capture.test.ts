@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { convexSiteUrl, JUST_ADDED_STEP_MS, JUST_ADDED_WINDOW_MS, justAddedSince } from "./capture";
+import { convexSiteUrl, JUST_ADDED_STEP_MS, JUST_ADDED_WINDOW_MS, justAddedSince, timestampPrefill } from "./capture";
 
 describe("justAddedSince", () => {
   it("is 12 hours back, rounded down to the step", () => {
@@ -23,5 +23,21 @@ describe("convexSiteUrl", () => {
 
   it("uses the next port for a local backend", () => {
     expect(convexSiteUrl("http://127.0.0.1:3210")).toBe("http://127.0.0.1:3211");
+  });
+});
+
+describe("timestampPrefill", () => {
+  it("leaves the timestamp empty near the start or without a player", () => {
+    expect(timestampPrefill(null)).toBe("");
+    expect(timestampPrefill(undefined)).toBe("");
+    expect(timestampPrefill(Number.NaN)).toBe("");
+    expect(timestampPrefill(0)).toBe("");
+    expect(timestampPrefill(4.9)).toBe("");
+  });
+
+  it("formats the player time past the threshold", () => {
+    expect(timestampPrefill(5)).toBe("0:05");
+    expect(timestampPrefill(754.6)).toBe("12:34");
+    expect(timestampPrefill(3725)).toBe("1:02:05");
   });
 });

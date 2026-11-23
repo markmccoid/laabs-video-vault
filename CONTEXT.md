@@ -17,7 +17,7 @@ A view listing every **Video** captured in the last 12 hours, whichever folder i
 _Avoid_: Recent, new, Just Added folder
 
 **Capture**:
-Getting a YouTube link from outside the app into the library: pasting, sharing from another app, the clipboard, or Shortcuts. Every capture route ends in the same "add a video" behavior (duplicate detection, restore from Trash, metadata fetch).
+Getting a YouTube link from outside the app into the library: pasting, sharing from another app, the clipboard, Shortcuts, Quick Add, or the **Browser Extension**. Every capture route ends in the same "add a video" behavior (duplicate detection, restore from Trash, metadata fetch).
 _Avoid_: Import (reserved for `.vfolder` files)
 
 **Share Extension**:
@@ -26,6 +26,13 @@ The app's entry in the iOS share sheet. It shows the shared video and lets the u
 **Quick Add**:
 The Mac app's small floating panel for capturing a link with a folder and note, opened by a global hotkey from any app. The Mac counterpart of the **Share Extension** card.
 _Avoid_: Mini window, popup
+
+**Browser Extension**:
+The Chromium extension (Chrome, Edge, Brave, Arc). Its popup is the browser counterpart of the **Share Extension** card: folder (Inbox by default), note, and an optional timestamp at the player's current time. Its toolbar badge shows ✓ when the current YouTube video is already saved.
+_Avoid_: Plugin, add-on, Chrome app
+
+**Save to Vault**:
+The **Browser Extension**'s right-click item on YouTube links. It opens the extension's popup for that link; it never saves without the popup.
 
 **Command Palette**:
 The Mac app's ⌘K search box for running any command or jumping to a folder, tag, or view.

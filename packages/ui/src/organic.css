@@ -1,5 +1,5 @@
 /* Organic Desktop component layer, copied from the design system (components/bundle.css). Values come from tokens.css. */
-/* Fonts are bundled with @fontsource (see main.tsx), per the macOS guidance. */
+/* Fonts are bundled with @fontsource (see fonts.css), per the macOS guidance. */
 
 *, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); font-size: 15px; line-height: 1.55; font-weight: 400; }

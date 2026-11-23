@@ -3,9 +3,11 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { requireOwnedFolder, requireOwnedTag, requireOwnedVideo, requireOwnedVideos, requireUserId } from "./lib/auth";
-import { captureVideo, type CaptureResult } from "./lib/capture";
+import { captureVideo, lookupCapture, type CaptureResult, type LookupResult } from "./lib/capture";
 import { rebuildSearchText } from "./lib/search";
 import { attachTag, ensureShortTag, tagsForVideo } from "./lib/tags";
+import { insertUserTimestamp } from "./lib/timestamps";
+import { hardDelete } from "./lib/hardDelete";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -28,23 +30,6 @@ async function tagIdsForVideo(ctx: QueryCtx, videoId: Id<"videos">): Promise<Set
     .withIndex("by_video", (q) => q.eq("videoId", videoId))
     .collect();
   return new Set(links.map((l) => l.tagId));
-}
-
-/** Permanently delete a video with its tag links, bookmarks, and cached thumbnail. */
-async function hardDelete(ctx: MutationCtx, video: Doc<"videos">) {
-  const [links, bookmarks] = await Promise.all([
-    ctx.db
-      .query("videoTags")
-      .withIndex("by_video", (q) => q.eq("videoId", video._id))
-      .collect(),
-    ctx.db
-      .query("bookmarks")
-      .withIndex("by_video_time", (q) => q.eq("videoId", video._id))
-      .collect(),
-  ]);
-  for (const doc of [...links, ...bookmarks]) await ctx.db.delete(doc._id);
-  if (video.thumbStorageId) await ctx.storage.delete(video.thumbStorageId);
-  await ctx.db.delete(video._id);
 }
 
 const TRASH_BATCH = 50;
@@ -90,6 +75,39 @@ export const saveShared = mutation({
   handler: async (ctx, args): Promise<CaptureResult> => {
     const userId = await requireUserId(ctx);
     return await captureVideo(ctx, userId, { ...args, missingFolderToInbox: true });
+  },
+});
+
+/**
+ * Whether a link is already in the library, and where. The Browser Extension
+ * uses it for its popup and its ✓ badge (docs/adr/0002).
+ */
+export const lookup = query({
+  args: { input: v.string() },
+  handler: async (ctx, { input }): Promise<LookupResult> => {
+    const userId = await requireUserId(ctx);
+    return await lookupCapture(ctx, userId, input);
+  },
+});
+
+/**
+ * Capture with an optional timestamp, in one transaction (Browser Extension
+ * popup). `update` overwrites folder and note on an already-saved video, like
+ * the Share Extension. The timestamp is always added as a new one.
+ */
+export const capture = mutation({
+  args: {
+    input: v.string(),
+    folderId: v.optional(v.id("folders")),
+    notes: v.optional(v.string()),
+    update: v.optional(v.boolean()),
+    timestamp: v.optional(v.object({ seconds: v.number(), label: v.string() })),
+  },
+  handler: async (ctx, { timestamp, ...args }): Promise<CaptureResult> => {
+    const userId = await requireUserId(ctx);
+    const result = await captureVideo(ctx, userId, { ...args, missingFolderToInbox: true });
+    if (timestamp) await insertUserTimestamp(ctx, userId, result.videoId, timestamp.seconds, timestamp.label);
+    return result;
   },
 });
 

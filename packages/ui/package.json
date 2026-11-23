@@ -1,0 +1,15 @@
+{
+  "name": "@lvv/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Organic Desktop design tokens, component layer, and fonts shared by the desktop app and the browser extension.",
+  "exports": {
+    "./fonts.css": "./src/fonts.css",
+    "./tokens.css": "./src/tokens.css",
+    "./organic.css": "./src/organic.css"
+  },
+  "dependencies": {
+    "@fontsource/caprasimo": "^5.3.0",
+    "@fontsource/figtree": "^5.3.0"
+  }
+}
