@@ -1,7 +1,9 @@
 /**
  * Capture: getting YouTube links into the library from outside the app
- * (share sheet, clipboard, Shortcuts). See CONTEXT.md.
+ * (share sheet, clipboard, Shortcuts, Browser Extension). See CONTEXT.md.
  */
+
+import { formatDuration } from "./youtube";
 
 /** How long a captured video stays in the Just Added view. */
 export const JUST_ADDED_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -30,4 +32,17 @@ export function convexSiteUrl(convexUrl: string): string {
     url.port = String(Number(url.port) + 1);
   }
   return url.origin;
+}
+
+/**
+ * The Browser Extension fills in a timestamp from the player only past this
+ * point, so a video you've just started doesn't get a pointless 0:03.
+ */
+export const TIMESTAMP_PREFILL_MIN_SECONDS = 5;
+
+/** The popup's starting timestamp text ("12:34"), or "" to leave it empty. */
+export function timestampPrefill(playerSeconds: number | null | undefined): string {
+  if (playerSeconds == null || !Number.isFinite(playerSeconds)) return "";
+  if (playerSeconds < TIMESTAMP_PREFILL_MIN_SECONDS) return "";
+  return formatDuration(playerSeconds);
 }

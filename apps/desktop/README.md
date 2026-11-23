@@ -6,8 +6,7 @@ Tauri v2 + React + Vite app for macOS (and later Windows). It uses `@lvv/core` a
 
 Styled with the **Organic Desktop** design system (https://claude.ai/artifact/RroiFySJ1jGdnv9x1vgXsB):
 
-- `src/styles/tokens.css` is generated from the system's `tokens.json` (Light and Dark, `data-theme` override). Regenerate it rather than editing by hand when tokens change.
-- `src/styles/organic.css` is the system's component layer (`components/bundle.css`), with fonts bundled through `@fontsource` instead of Google Fonts.
+- Tokens, the component layer, and fonts come from `packages/ui` (`@lvv/ui`), shared with the browser extension.
 - `src/styles/app.css` is the app layout. It uses only tokens: no raw hex.
 
 ## Run

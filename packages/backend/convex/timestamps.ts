@@ -1,9 +1,10 @@
-import { timestampLabel, timestampSeconds } from "@lvv/core";
+import { timestampLabel } from "@lvv/core";
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, type MutationCtx } from "./_generated/server";
 import { requireOwnedVideo, requireUserId } from "./lib/auth";
 import { rebuildSearchText } from "./lib/search";
+import { insertUserTimestamp } from "./lib/timestamps";
 
 /**
  * The user's own timestamps on a video: a time plus a short description.
@@ -24,16 +25,7 @@ export const add = mutation({
   args: { videoId: v.id("videos"), seconds: v.number(), label: v.string() },
   handler: async (ctx, { videoId, seconds, label }) => {
     const { userId } = await requireOwnedVideo(ctx, videoId);
-    const at = timestampSeconds(seconds);
-    const id = await ctx.db.insert("bookmarks", {
-      userId,
-      videoId,
-      seconds: at,
-      label: timestampLabel(label, at),
-      source: "user",
-    });
-    await rebuildSearchText(ctx, videoId);
-    return id;
+    return await insertUserTimestamp(ctx, userId, videoId, seconds, label);
   },
 });
 

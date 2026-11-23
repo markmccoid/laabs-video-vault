@@ -45,6 +45,7 @@ export function Sidebar({
   const renameFolder = useMutation(api.folders.rename);
   const move = useMutation(api.videos.move);
   const { signOut } = useAuthActions();
+  const deleteAccount = useMutation(api.users.deleteAccount);
   const toast = useToast();
 
   const tree = useMemo(() => buildFolderTree(folders ?? []), [folders]);
@@ -264,9 +265,43 @@ export function Sidebar({
           ))}
         </div>
         <div className="account">
-          <span className="account-email" title={viewer?.email ?? undefined}>
+          <button
+            type="button"
+            className="account-email"
+            title="Account"
+            aria-haspopup="menu"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setMenu({
+                x: r.left,
+                y: r.top - 8,
+                items: [
+                  { label: "Sign Out", onSelect: () => void signOut() },
+                  { kind: "sep" },
+                  {
+                    label: "Delete Account…",
+                    danger: true,
+                    onSelect: () =>
+                      setDialog(
+                        <ConfirmDialog
+                          title="Delete your account?"
+                          body="This permanently deletes your account and your whole library: every video, folder, tag, note, and timestamp, on all your devices. It can't be undone."
+                          confirm="Delete account"
+                          onClose={close}
+                          onConfirm={async () => {
+                            await deleteAccount();
+                            // The server has ended every session; drop ours.
+                            await signOut();
+                          }}
+                        />,
+                      ),
+                  },
+                ],
+              });
+            }}
+          >
             {viewer?.email ?? "Signed in"}
-          </span>
+          </button>
           <button className="btn btn-ghost btn-icon-sm" aria-label="Sign out" title="Sign out" onClick={() => void signOut()}>
             <Icon as={LogOut} size={16} />
           </button>

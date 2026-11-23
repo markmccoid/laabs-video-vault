@@ -6,11 +6,15 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 /**
  * Every public function resolves the user here. Functions never accept a
- * userId argument from the client.
+ * userId argument from the client. A deleted account (users.deleteAccount)
+ * counts as signed out.
  */
-export async function requireUserId(ctx: { auth: Auth }): Promise<Id<"users">> {
+export async function requireUserId(ctx: { auth: Auth; db?: QueryCtx["db"] }): Promise<Id<"users">> {
   const userId = await getAuthUserId(ctx);
   if (!userId) throw new ConvexError("Not signed in");
+  // An access token outlives a deleted account by up to an hour; the user row
+  // doesn't. (Actions have no db; anything they write goes through a mutation.)
+  if (ctx.db && !(await ctx.db.get(userId))) throw new ConvexError("Not signed in");
   return userId;
 }
 

@@ -1,9 +1,6 @@
-import "@fontsource/caprasimo/400.css";
-import "@fontsource/figtree/400.css";
-import "@fontsource/figtree/600.css";
-import "@fontsource/figtree/700.css";
-import "./styles/tokens.css";
-import "./styles/organic.css";
+import "@lvv/ui/fonts.css";
+import "@lvv/ui/tokens.css";
+import "@lvv/ui/organic.css";
 import "./styles/app.css";
 
 import { ConvexAuthProvider } from "@convex-dev/auth/react";

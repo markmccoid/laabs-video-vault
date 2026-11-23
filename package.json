@@ -10,6 +10,8 @@
     "dev:backend": "npm run dev -w @lvv/backend",
     "dev:mobile": "npm run start -w @lvv/mobile",
     "dev:desktop": "npm run dev -w @lvv/desktop",
+    "dev:extension": "npm run dev -w @lvv/extension",
+    "build:extension": "npm run build -w @lvv/extension",
     "ios": "npm run ios -w @lvv/mobile",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"

@@ -29,6 +29,8 @@ export const create = action({
 export const insert = internalMutation({
   args: { userId: v.id("users"), tokenHash: v.string() },
   handler: async (ctx, { userId, tokenHash }) => {
+    // The account was deleted while `create` was running.
+    if (!(await ctx.db.get(userId))) throw new ConvexError("Not signed in");
     const existing = await ctx.db
       .query("shareTokens")
       .withIndex("by_user", (q) => q.eq("userId", userId))

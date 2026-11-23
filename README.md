@@ -9,6 +9,8 @@ packages/backend   Convex: schema, auth, queries/mutations, YouTube metadata act
 packages/core      Shared TS: URL parsing, chapters, durations, folder-tree rules (with tests)
 apps/mobile        Expo SDK 58 (iOS/iPad), Expo Router, routes in src/app/
 apps/desktop       Phase 5: Tauri v2 + React + Vite, Organic Desktop design system
+apps/extension     Phase 6: Chromium browser extension (Manifest V3, WXT + React)
+packages/ui        Organic Desktop CSS tokens, component layer, and fonts (desktop + extension)
 ```
 
 npm workspaces + Turborepo. Run everything from the repo root unless noted.
@@ -103,6 +105,7 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 |---|---|
 | `npm run dev:backend` | `convex dev` (push + codegen on save) |
 | `npm run dev:mobile` | Expo dev server |
+| `npm run dev:extension` | Browser extension in watch mode (load `apps/extension/.output/chrome-mv3-dev` unpacked; see `apps/extension/README.md`) |
 | `npm run dev:desktop` | Desktop UI in the browser at localhost:1420 (see `apps/desktop/README.md` for the native app) |
 | `npm test` | Unit tests (`@lvv/core`) |
 | `npm run typecheck` | Typecheck all packages |
@@ -116,13 +119,15 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 - **Trash:** soft delete (`deletedAt`). Restoring returns a video to its folder, or the Inbox if that folder is gone. "Delete Forever" and "Empty Trash" also delete tag links, bookmarks, and the cached thumbnail.
 - **Search:** text search uses the Convex search index; tag chips require every chosen tag; Shorts chips narrow to or hide Shorts. Tag chips or "Shorts only" work without any text.
 - **Search:** one `searchText` field per video (title, channel, tags, notes, description), rebuilt by `convex/lib/search.ts`.
-- **Sharing:** personal library only. Folders will be shared by exporting/importing a `.vfolder` JSON file (Phase 6).
+- **Sharing:** personal library only. Folders will be shared by exporting/importing a `.vfolder` JSON file (Phase 7).
 - **Thumbnails:** cached in Convex storage, so cards survive deleted or private videos.
 - **Chapters:** chapters parsed from the description are stored as `bookmarks` with `source: "chapter"`. Tapping one seeks the embedded player.
 - **Player:** the YouTube IFrame API inside `react-native-webview`, loaded from base URL `https://com.markmccoid.laabs-video-vault`. YouTube rejects WebView embeds without an https Referer (errors 152/153), so don't remove the base URL. Videos whose owners block embedding (errors 101/150) show an "Open in YouTube" card. AirPlay is enabled on the player (test on a real device); Chromecast isn't possible in an iOS web embed, so "Open in YouTube" covers casting.
 - **Share extension:** native Swift target added with `@bacons/apple-targets` (the `ios/` folder is generated, so no hand-edited Xcode targets). The card offers Cancel and Save, with a folder picker defaulting to Inbox and a note. It never opens the main app, because Apple doesn't support that from share extensions. It authenticates with a per-device share token (see `docs/adr/0001`). Saves that fail go to the Share Queue in the App Group, which the app sends on foreground. When signed out, it saves nothing. Glossary: `CONTEXT.md`.
+- **Account deletion:** Settings (iOS) and the account menu (Mac, click your email) offer Delete Account (App Store guideline 5.1.1(v)). `users.deleteAccount` removes sign-in, sessions, and share tokens at once; 10 seconds later (so the deleting device can sign out first) the user row goes, which makes `requireUserId` reject any access token still in flight, and the library is purged in scheduled batches.
 - **Just Added:** a view of videos captured in the last 12 hours (`addedAt`), across all folders. It's not a folder.
 - **Clipboard:** use the native paste button (`ClipboardPasteButton`), never a silent clipboard read, so iOS never shows the "Allow Paste" prompt.
+- **Browser Extension:** one Manifest V3 build for Chromium browsers (Chrome, Edge, Brave, Arc), shared with family through an unlisted Chrome Web Store listing (loaded unpacked while developing). It signs in with its own Convex Auth session and calls the normal public functions (see `docs/adr/0002`). Popup: folder picker (Inbox by default), note, and a timestamp filled from the player when it's past 5s (editable, clearable) with an optional description. No tags. Already-saved videos offer to update folder and note; the timestamp is added as a new one. The toolbar badge shows ✓ on watch and Shorts pages when the video is saved, checked only for the active tab, cached per video for the browser session, with one-shot HTTP queries (no WebSocket) to keep Convex usage low. Failed saves show the error and keep the popup open; there's no browser queue.
 - **List/grid:** the view mode is a per-device preference in AsyncStorage (`src/lib/viewMode.ts`).
 
 ## Phase plan
@@ -133,5 +138,6 @@ Then set `YOUTUBE_API_KEY` on prod too (`npx convex env set --prod YOUTUBE_API_K
 3. **Capture everywhere**: Swift share extension (App Group queue + Convex HTTP action), Just Added view with Dismiss (select all to clear it), clipboard detection, Shortcuts. *Remaining: Shortcuts; revoke all share tokens on password reset.*
 4. **Timestamp bookmarks** ✅ capture at the current time, seek, search, share `?t=` links (swipe a timestamp).
 5. **Mac desktop**: Tauri v2, three-pane layout, ⌘K, drag & drop, global hotkeys. *Done: three-pane library, sign-in, add/move/trash with Undo, notes, timestamps, drag to folders, Light/Dark, runs natively with the embedded player. Remaining: one command list driving native menus, ⌘K and keyboard shortcuts; multi-select; tag editing; the window stays running when closed; two capture hotkeys with a Quick Add panel; a local `tauri build`. Scope and menu map: `apps/desktop/README.md`.*
-6. **Folder export/import**: `.vfolder` file, file-type registration, import summary.
-7. **Extras**: smart folders, browser extension, Windows, widget, AI tagging, full backup, folder reordering (mobile and Mac together). Mac: a Settings window (choose what the hotkeys do, custom keys, launch at login), Quick Add over full-screen apps, video search in ⌘K, signing/notarizing and auto-update.
+6. **Browser extension**: Chromium MV3 extension (`apps/extension`). Toolbar popup, ⌥⇧V, and right-click **Save to Vault** on YouTube links all open the same popup; a paste field on pages without a video; timestamp at the player's current time; ✓ badge for saved videos. Scope and setup: `apps/extension/README.md`.
+7. **Folder export/import**: `.vfolder` file, file-type registration, import summary.
+8. **Extras**: smart folders, Firefox/Safari extension, Windows, widget, AI tagging, full backup, folder reordering (mobile and Mac together). Mac: a Settings window (choose what the hotkeys do, custom keys, launch at login), Quick Add over full-screen apps, video search in ⌘K, signing/notarizing and auto-update.
