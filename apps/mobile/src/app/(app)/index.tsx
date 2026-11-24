@@ -42,9 +42,11 @@ export default function Library() {
             <Stack.Toolbar.Button icon="gearshape" accessibilityLabel="Settings" onPress={() => router.push("/settings")} />
           </Stack.Toolbar>
           <Stack.Toolbar placement="right">
-            <Stack.Toolbar.Button disabled={!inbox?.length} onPress={() => selection.start()}>
-              Select
-            </Stack.Toolbar.Button>
+            {!!inbox?.length && (
+              <Stack.Toolbar.Button tintColor={theme.text} onPress={() => selection.start()}>
+                Select
+              </Stack.Toolbar.Button>
+            )}
             <Stack.Toolbar.Menu icon="plus" variant="prominent" tintColor={theme.accent} accessibilityLabel="Add">
               <Stack.Toolbar.MenuAction icon="link" onPress={() => router.push("/add")}>
                 Add video

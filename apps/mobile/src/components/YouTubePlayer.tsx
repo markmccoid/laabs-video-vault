@@ -45,6 +45,8 @@ type Props = {
   onPlayingChange?: (playing: boolean) => void;
   /** Where play starts if nothing seeks first (Watch Progress). Read when the player mounts. */
   initialPosition?: number;
+  /** Start the player on mount instead of showing the thumbnail (the row menu's Play). */
+  autoPlay?: boolean;
 };
 
 type PlayerMessage =
@@ -123,11 +125,12 @@ export function YouTubePlayer({
   playbackRate = 1,
   onPlayingChange,
   initialPosition = 0,
+  autoPlay = false,
 }: Props) {
   const time = useRef(initialPosition);
   const webview = useRef<WebView<NoExtraProps>>(null);
   // `start` is fixed when the WebView mounts; later seeks go through injectJavaScript.
-  const [start, setStart] = useState<number | null>(null);
+  const [start, setStart] = useState<number | null>(autoPlay ? initialPosition : null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<number | "load" | null>(null);
   const [resumeAt, setResumeAt] = useState(initialPosition);

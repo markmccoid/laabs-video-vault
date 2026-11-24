@@ -1,5 +1,5 @@
 import { Button, Host, Image as SwiftImage, Menu } from "@expo/ui/swift-ui";
-import { frame } from "@expo/ui/swift-ui/modifiers";
+import { contentShape, frame, shapes } from "@expo/ui/swift-ui/modifiers";
 import { highlight, snippet } from "@lvv/core";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
@@ -134,16 +134,29 @@ export const VideoRow = memo(function VideoRow({
   );
 });
 
-/** The row's … button: a native SwiftUI menu. */
+/** SwiftUI frames can't take Infinity across the bridge; this is "as big as offered". */
+const FILL = 10000;
+
+/**
+ * The row's … button: a native SwiftUI menu. The host fills the row's height
+ * and right edge, and the label fills the host, so that whole area takes the tap.
+ */
 function VideoMenu({ video, onStartSelect }: { video: VideoListItem; onStartSelect?: () => void }) {
   const theme = useTheme();
   const actions = useVideoActions();
   const ids = [video._id];
   return (
-    <Host matchContents colorScheme={theme.scheme} style={styles.menuHost}>
+    <Host colorScheme={theme.scheme} style={styles.menu}>
       <Menu
-        label={<SwiftImage systemName="ellipsis" size={17} color={theme.muted} />}
-        modifiers={[frame({ width: 34, height: 44 })]}
+        label={
+          <SwiftImage
+            systemName="ellipsis"
+            size={22}
+            color={theme.text}
+            modifiers={[frame({ maxWidth: FILL, maxHeight: FILL }), contentShape(shapes.rectangle())]}
+          />
+        }
+        modifiers={[frame({ maxWidth: FILL, maxHeight: FILL })]}
       >
         <Button label="Play" systemImage="play.fill" onPress={() => actions.play(video._id)} />
         <Button label="Move to folder…" systemImage="folder" onPress={() => actions.move(ids)} />
@@ -171,5 +184,6 @@ const styles = StyleSheet.create({
   info: { flex: 1, gap: 4, paddingTop: 2 },
   pending: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 40 },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 2 },
-  menuHost: { marginRight: -8, marginTop: -6, marginLeft: 4 },
+  // Fills the row's height and runs into its padding, so the whole right edge takes the tap.
+  menu: { alignSelf: "stretch", width: 44 + GUTTER / 2, marginVertical: -8, marginRight: -GUTTER },
 });
