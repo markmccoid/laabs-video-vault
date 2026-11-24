@@ -12,10 +12,11 @@ import { TAG_INPUT_ID, TagEditor } from "./TagEditor";
 import { MoveDialog } from "./Dialogs";
 import { Icon } from "./Icon";
 import { ContextMenu, type MenuItem } from "./Menu";
-import { SpeedControl } from "./GravityWell";
 import { Player, type PlayerHandle } from "./Player";
+import { createTimeline, PlayerControls } from "./PlayerControls";
 import { useToast } from "./Toast";
 import { progressStore, useProgressRecorder } from "../lib/watchProgress";
+import { useCaptionsPref, useYouTubeControlsPref } from "../lib/playerPrefs";
 
 type LayoutProps = { listMode: ListMode; onListMode: (m: ListMode) => void };
 
@@ -70,6 +71,25 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
   // Resume from Watch Progress, read once (this component is keyed by video). Shorts never have any.
   const [resumeAt] = useState(() => resumeSeconds(progressStore.get(video._id), video.isShort));
   const progress = useProgressRecorder(video._id, !video.isShort && !trashed);
+  const [timeline] = useState(() => createTimeline(resumeAt ?? 0));
+  const [captions, setCaptions] = useCaptionsPref();
+  const [ytControls, setYtControls] = useYouTubeControlsPref();
+  // Switching YouTube's controls reloads the embed, so it picks up where you were
+  // (and keeps playing if it was).
+  const [startAt, setStartAt] = useState({ at: resumeAt, autoplay: false });
+  const toggleYtControls = () => {
+    setStartAt({ at: Math.floor(timeline.get().t), autoplay: playing });
+    setYtControls(!ytControls);
+  };
+  const onTime = (t: number, d: number) => {
+    timeline.set(t, d);
+    progress.onTime(t, d);
+  };
+  const seek = (seconds: number, opts?: { play?: boolean }) => {
+    // Show the new position right away; the player reports time a moment later.
+    timeline.set(seconds);
+    player.current?.seekTo(seconds, opts);
+  };
   const onPlayingChange = (p: boolean) => {
     setPlaying(p);
     if (!p) progress.onPause();
@@ -80,6 +100,8 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
   // Commands for the open video (menu bar and shortcuts; see lib/commands.ts).
   // Move, copy link and trash belong to the list, since they work on a selection.
   useCommand("playPause", () => player.current?.togglePlay());
+  useCommand("toggleCaptions", () => setCaptions(!captions), { checked: captions });
+  useCommand("toggleYouTubeControls", toggleYtControls, { checked: ytControls });
   useCommand("openInYouTube", () => window.open(watchUrl(video.youtubeId, player.current?.currentTime()), "_blank"));
   useCommand(
     "refreshMetadata",
@@ -132,18 +154,30 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
         <Player
           ref={player}
           youtubeId={video.youtubeId}
-          start={resumeAt}
+          start={startAt.at}
+          autoplay={startAt.autoplay}
+          controls={ytControls}
+          captions={captions}
           title={video.title}
           rate={rate}
           onPlayingChange={onPlayingChange}
-          onTime={progress.onTime}
+          onTime={onTime}
         />
-        <div className="player-bar">
-          <SpeedControl rate={rate} onChange={setRate} playing={playing} />
-          <button className="btn btn-ghost btn-sm" title="Play from the beginning" onClick={() => player.current?.seekTo(0)}>
+        <PlayerControls
+          timeline={timeline}
+          knownDuration={video.durationSec ?? 0}
+          playing={playing}
+          onTogglePlay={() => player.current?.togglePlay()}
+          onSeek={seek}
+          rate={rate}
+          onRateChange={setRate}
+          captions={captions}
+          onCaptionsChange={setCaptions}
+        >
+          <button className="btn btn-ghost btn-sm" title="Play from the beginning" onClick={() => seek(0)}>
             <Icon as={RotateCcw} size={16} /> Start over
           </button>
-        </div>
+        </PlayerControls>
 
         <div className="detail-head">
           <h4>{video.title}</h4>

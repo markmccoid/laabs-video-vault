@@ -66,7 +66,7 @@ export function VideoListScreen({
       ) : (
         <Stack.Toolbar placement="right">
           {allIds.length > 0 && (
-            <Stack.Toolbar.Button tintColor={theme.text} onPress={() => selection.start()}>
+            <Stack.Toolbar.Button onPress={() => selection.start()}>
               Select
             </Stack.Toolbar.Button>
           )}

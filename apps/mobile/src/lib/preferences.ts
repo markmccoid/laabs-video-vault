@@ -13,8 +13,10 @@ type Prefs = {
   recentSearches: string[];
   /** Whether the player's Timestamps section is expanded. */
   timestampsOpen: boolean;
-  /** Show YouTube's own controls in the embedded player instead of ours. */
+  /** Also show YouTube's own controls over the video (ours stay below it). */
   youtubeControls: boolean;
+  /** Captions on or off for every video (the player's CC button). */
+  captions: boolean;
   /** Speed every video starts at. */
   defaultRate: number;
   ratePicker: RatePicker;
@@ -24,7 +26,7 @@ type Prefs = {
 };
 
 const KEY = "lvv.prefs";
-const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [], timestampsOpen: true, youtubeControls: false, defaultRate: 1, ratePicker: "menu", jumpBack: 10, jumpForward: 10 };
+const DEFAULTS: Prefs = { libraryLayout: "grid", theme: "system", recentSearches: [], timestampsOpen: true, youtubeControls: false, captions: false, defaultRate: 1, ratePicker: "menu", jumpBack: 10, jumpForward: 10 };
 
 /** Layouts the Library renders today; the others fall back to Grid. */
 export const SUPPORTED_LAYOUTS: LibraryLayout[] = ["grid", "tree"];
@@ -87,6 +89,7 @@ export function usePreferences() {
     clearRecentSearches: () => update({ recentSearches: [] }),
     setTimestampsOpen: (timestampsOpen: boolean) => update({ timestampsOpen }),
     setYoutubeControls: (youtubeControls: boolean) => update({ youtubeControls }),
+    setCaptions: (captions: boolean) => update({ captions }),
     setDefaultRate: (defaultRate: number) => update({ defaultRate }),
     setRatePicker: (ratePicker: RatePicker) => update({ ratePicker }),
     setJumpBack: (jumpBack: number) => update({ jumpBack }),

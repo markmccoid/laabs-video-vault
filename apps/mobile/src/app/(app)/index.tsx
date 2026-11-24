@@ -43,7 +43,7 @@ export default function Library() {
           </Stack.Toolbar>
           <Stack.Toolbar placement="right">
             {!!inbox?.length && (
-              <Stack.Toolbar.Button tintColor={theme.text} onPress={() => selection.start()}>
+              <Stack.Toolbar.Button onPress={() => selection.start()}>
                 Select
               </Stack.Toolbar.Button>
             )}

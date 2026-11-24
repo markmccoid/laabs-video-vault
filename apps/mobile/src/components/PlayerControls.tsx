@@ -3,7 +3,7 @@ import { backgroundOverlay, clipShape, font, foregroundStyle, frame, monospacedD
 import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
 import { GravityWellButton } from "@/components/GravityWell";
-import { PillButton, type SymbolName } from "@/components/ui";
+import { type SymbolName } from "@/components/ui";
 import type { RatePicker } from "@/lib/preferences";
 import { useTheme } from "@/lib/theme";
 
@@ -63,6 +63,8 @@ type Props = {
   onTogglePlay: () => void;
   rate: number;
   onRateChange: (rate: number) => void;
+  captions: boolean;
+  onCaptionsChange: (on: boolean) => void;
   /** Which speed picker the pill opens (Settings → Player). */
   ratePicker?: RatePicker;
   jumpBack: number;
@@ -73,10 +75,10 @@ type Props = {
 };
 
 /**
- * Our controls under the player, used when YouTube's own controls are hidden
- * (Settings → Player). Seeking to a point is the Scrubber above.
+ * Our controls under the player, shown whether or not YouTube's own controls
+ * are on (Settings → Player). Seeking to a point is the Scrubber above.
  */
-export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, ratePicker = "menu", jumpBack, jumpForward, onJump, onOpenInYouTube }: Props) {
+export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, captions, onCaptionsChange, ratePicker = "menu", jumpBack, jumpForward, onJump, onOpenInYouTube }: Props) {
   const theme = useTheme();
   return (
     <View style={styles.row}>
@@ -99,9 +101,32 @@ export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, rate
         <RateMenu rate={rate} onChange={onRateChange} />
       )}
 
+      <Pressable
+        onPress={() => onCaptionsChange(!captions)}
+        accessibilityRole="button"
+        accessibilityLabel="Captions"
+        accessibilityState={{ selected: captions }}
+        hitSlop={4}
+        style={({ pressed }) => [
+          styles.cc,
+          { backgroundColor: captions ? theme.surface : "transparent", opacity: pressed ? 0.5 : 1 },
+        ]}
+      >
+        <SymbolView name={captions ? "captions.bubble.fill" : "captions.bubble"} size={22} tintColor={captions ? theme.accent : theme.muted} />
+      </Pressable>
+
       <View style={{ flex: 1 }} />
 
-      <PillButton label="YouTube" icon="arrow.up.right.square" variant="surface" onPress={onOpenInYouTube} />
+      {/* Icon only, like CC, so the row fits a small iPhone. */}
+      <Pressable
+        onPress={onOpenInYouTube}
+        accessibilityRole="button"
+        accessibilityLabel="Open in YouTube"
+        hitSlop={4}
+        style={({ pressed }) => [styles.cc, { backgroundColor: theme.surface, opacity: pressed ? 0.6 : 1 }]}
+      >
+        <SymbolView name="arrow.up.right.square" size={20} tintColor={theme.text} />
+      </Pressable>
     </View>
   );
 }
@@ -126,4 +151,5 @@ const styles = StyleSheet.create({
   transport: { flexDirection: "row", alignItems: "center", gap: 2 },
   play: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   jump: { width: 40, height: 44, alignItems: "center", justifyContent: "center" },
+  cc: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
 });

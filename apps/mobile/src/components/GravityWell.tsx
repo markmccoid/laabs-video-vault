@@ -353,7 +353,25 @@ export function GravityWellButton({ rate, onChange, playing }: { rate: number; o
         <GestureHandlerRootView style={{ flex: 1 }}>
           <Pressable style={[styles.backdrop, { backgroundColor: theme.scrim }]} onPress={() => setOpen(false)} accessibilityLabel="Close">
             <Pressable style={[styles.sheet, { backgroundColor: theme.card }]} onPress={() => {}}>
-              <Text style={[type.sheetTitle, { color: theme.text }]}>Speed</Text>
+              {/* Title and rate are centred together, above the well where a
+                  finger dragging in it doesn't cover them. The rate sits in a
+                  slot sized by an invisible "8.8×" (the widest label), so the
+                  title never shifts as the rate changes. */}
+              <View style={styles.header}>
+                <Text style={[type.sheetTitle, styles.headerText, { color: theme.text }]}>Speed</Text>
+                <View>
+                  <Text style={[styles.headerText, styles.headerRate, { opacity: 0 }]} aria-hidden>
+                    8.8×
+                  </Text>
+                  <Text
+                    style={[styles.headerText, styles.headerRate, styles.headerRateValue, { color: theme.accent }]}
+                    accessibilityLiveRegion="polite"
+                    accessibilityLabel={`${rateLabel(rate)} speed`}
+                  >
+                    {rateLabel(rate)}
+                  </Text>
+                </View>
+              </View>
               <GravityWell value={rate} onChange={onChange} playing={playing} />
               <Text style={[type.meta, { color: theme.muted, textAlign: "center" }]}>
                 Drag outward to slow down, inward to speed up.{"\n"}Tap the center for 1.0×.
@@ -401,6 +419,10 @@ const styles = StyleSheet.create({
   button: { width: 64, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   buttonText: { fontFamily: fonts.semibold, fontSize: 15, fontVariant: ["tabular-nums"] },
   backdrop: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  headerText: { fontSize: 28, lineHeight: 34 },
+  headerRate: { fontFamily: fonts.bold, fontVariant: ["tabular-nums"] },
+  headerRateValue: { position: "absolute", left: 0, top: 0 },
   sheet: { borderRadius: radius.lg, padding: 20, gap: 14, alignItems: "center", width: "100%", maxWidth: 360 },
   done: { alignSelf: "stretch", height: 48, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
 });

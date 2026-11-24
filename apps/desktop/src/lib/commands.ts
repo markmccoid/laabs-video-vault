@@ -19,6 +19,8 @@ export type CommandDef = {
   sep?: boolean;
   /** Appearance items are check items in a submenu. */
   submenu?: "Appearance";
+  /** A check item (an on/off setting) in its menu. */
+  check?: boolean;
   /**
    * While the user types in a field: "run" still runs the command, "native"
    * leaves the key to the field (⌘Z undoes typing, Space types a space).
@@ -46,11 +48,13 @@ export const COMMANDS = [
   { id: "goInbox", label: "Inbox", menu: "View", shortcut: { key: "2", mod: true } },
   { id: "goTrash", label: "Trash", menu: "View", shortcut: { key: "3", mod: true } },
   { id: "toggleListSize", label: "Toggle List Size", menu: "View", shortcut: { key: "\\", mod: true }, sep: true },
+  { id: "toggleYouTubeControls", label: "Show YouTube Controls", menu: "View", check: true, sep: true },
   { id: "themeSystem", label: "System", menu: "View", submenu: "Appearance" },
   { id: "themeLight", label: "Light", menu: "View", submenu: "Appearance" },
   { id: "themeDark", label: "Dark", menu: "View", submenu: "Appearance" },
   // Video
   { id: "playPause", label: "Play/Pause", menu: "Video", shortcut: { key: " " }, inText: "native", keyOnly: true },
+  { id: "toggleCaptions", label: "Captions", menu: "Video", shortcut: { key: "c" }, inText: "native", keyOnly: true, check: true },
   { id: "markMoment", label: "Mark This Moment", menu: "Video", shortcut: { key: "b", mod: true } },
   { id: "moveToFolder", label: "Move to Folder…", menu: "Video", shortcut: { key: "m", mod: true, shift: true }, sep: true },
   { id: "editTags", label: "Edit Tags…", menu: "Video", shortcut: { key: "t", mod: true } },

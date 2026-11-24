@@ -116,31 +116,32 @@ export default function Player() {
           onTimeUpdate={onTimeUpdate}
           controls={prefs.youtubeControls}
           playbackRate={rate}
+          captions={prefs.captions}
           onPlayingChange={onPlayingChange}
           initialPosition={resumeAt}
           autoPlay={autoplay === "1"}
         />
         <Scrubber position={time.t} duration={duration} onSeek={seek} />
-        {!prefs.youtubeControls && (
-          <PlayerControls
-            playing={playing}
-            onTogglePlay={() => (playing ? player.current?.pause() : player.current?.play())}
-            rate={rate}
-            onRateChange={setRate}
-            ratePicker={prefs.ratePicker}
-            jumpBack={prefs.jumpBack}
-            jumpForward={prefs.jumpForward}
-            onJump={(delta) => {
-              const end = duration || Number.POSITIVE_INFINITY;
-              // Keep a paused video paused; a running one keeps playing.
-              seek(Math.max(0, Math.min(end, time.t + delta)), { play: playing });
-            }}
-            onOpenInYouTube={() => {
-              player.current?.pause();
-              void Linking.openURL(watchUrl(video.youtubeId, time.t));
-            }}
-          />
-        )}
+        <PlayerControls
+          playing={playing}
+          onTogglePlay={() => (playing ? player.current?.pause() : player.current?.play())}
+          rate={rate}
+          onRateChange={setRate}
+          captions={prefs.captions}
+          onCaptionsChange={prefs.setCaptions}
+          ratePicker={prefs.ratePicker}
+          jumpBack={prefs.jumpBack}
+          jumpForward={prefs.jumpForward}
+          onJump={(delta) => {
+            const end = duration || Number.POSITIVE_INFINITY;
+            // Keep a paused video paused; a running one keeps playing.
+            seek(Math.max(0, Math.min(end, time.t + delta)), { play: playing });
+          }}
+          onOpenInYouTube={() => {
+            player.current?.pause();
+            void Linking.openURL(watchUrl(video.youtubeId, time.t));
+          }}
+        />
 
         <View style={styles.titleBlock}>
           <Text style={[type.title, { color: theme.text }]}>{video.title || "Loading…"}</Text>
