@@ -101,7 +101,7 @@ export default function Settings() {
         <JumpControl label="Skip forward" value={prefs.jumpForward} onChange={prefs.setJumpForward} />
       </Group>
       <Text style={[type.meta, styles.note, { color: theme.muted }]}>
-        Every video starts at the default speed. Speed picker sets what the player's speed button opens. YouTube controls off: the player shows only the video, with play, speed, and Open in YouTube below it. On: YouTube's own controls appear over the video.
+        Every video starts at the default speed. Speed picker sets what the player's speed button opens. Play, speed, captions, and Open in YouTube are always below the video. YouTube controls on also shows YouTube's own controls over the video, with its settings for caption language and quality.
       </Text>
 
       <GroupLabel>Library</GroupLabel>

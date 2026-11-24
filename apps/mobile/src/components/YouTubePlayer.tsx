@@ -41,6 +41,8 @@ type Props = {
   controls?: boolean;
   /** Playback speed, applied when the player is ready and whenever it changes. */
   playbackRate?: number;
+  /** Captions on or off, applied whenever playback starts and whenever it changes. */
+  captions?: boolean;
   /** Called when playback starts or stops (buffering counts as playing). */
   onPlayingChange?: (playing: boolean) => void;
   /** Where play starts if nothing seeks first (Watch Progress). Read when the player mounts. */
@@ -70,13 +72,14 @@ function errorText(code: number | "load"): string {
   }
 }
 
-function playerHtml(youtubeId: string, startSeconds: number, controls: boolean, rate: number): string {
+function playerHtml(youtubeId: string, startSeconds: number, controls: boolean, rate: number, captions: boolean): string {
   const vars = {
     playsinline: 1,
     autoplay: 1,
     rel: 0,
     fs: 1,
     controls: controls ? 1 : 0,
+    cc_load_policy: captions ? 1 : 0,
     start: Math.floor(startSeconds),
     origin: APP_ORIGIN,
   };
@@ -89,6 +92,16 @@ function playerHtml(youtubeId: string, startSeconds: number, controls: boolean, 
 <script>
   function send(m){window.ReactNativeWebView.postMessage(JSON.stringify(m));}
   var player;
+  // Captions go through the player's (undocumented) captions module: unloading
+  // it hides them, loading it shows the default track. The player reloads the
+  // module when playback starts and after every seek, so this runs each time
+  // it starts playing (and again a moment later, in case the module loads late).
+  var captionsOn = ${captions};
+  var reapply;
+  function applyCaptions(){
+    try { captionsOn ? player.loadModule("captions") : player.unloadModule("captions"); } catch(_){}
+  }
+  function setCaptions(on){ captionsOn = on; applyCaptions(); }
   function onYouTubeIframeAPIReady(){
     player = new YT.Player("player", {
       videoId: ${JSON.stringify(youtubeId)},
@@ -100,7 +113,10 @@ function playerHtml(youtubeId: string, startSeconds: number, controls: boolean, 
             try { send({type:"time", t:player.getCurrentTime()||0, d:player.getDuration()||0}); } catch(_){}
           }, 1000);
         },
-        onStateChange: function(e){ send({type:"state", playing: e.data === 1 || e.data === 3}); },
+        onStateChange: function(e){
+          send({type:"state", playing: e.data === 1 || e.data === 3});
+          if (e.data === 1) { applyCaptions(); clearTimeout(reapply); reapply = setTimeout(applyCaptions, 1000); }
+        },
         onError: function(e){ send({type:"error", code:e.data}); }
       }
     });
@@ -123,6 +139,7 @@ export function YouTubePlayer({
   onTimeUpdate,
   controls = true,
   playbackRate = 1,
+  captions = false,
   onPlayingChange,
   initialPosition = 0,
   autoPlay = false,
@@ -140,14 +157,21 @@ export function YouTubePlayer({
   // The rate at mount goes into the page; later changes go through injectJavaScript.
   const rateRef = useRef(playbackRate);
   rateRef.current = playbackRate;
+  // Same for captions: toggling them must not rebuild the page.
+  const captionsRef = useRef(captions);
+  captionsRef.current = captions;
   const html = useMemo(
-    () => (start === null ? null : playerHtml(youtubeId, start, controls, rateRef.current)),
+    () => (start === null ? null : playerHtml(youtubeId, start, controls, rateRef.current, captionsRef.current)),
     [youtubeId, start, controls],
   );
 
   useEffect(() => {
     if (ready) webview.current?.injectJavaScript(`player && player.setPlaybackRate(${playbackRate}); true;`);
   }, [ready, playbackRate]);
+
+  useEffect(() => {
+    if (ready) webview.current?.injectJavaScript(`setCaptions(${captions}); true;`);
+  }, [ready, captions]);
 
   useImperativeHandle(
     ref,

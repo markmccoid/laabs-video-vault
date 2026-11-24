@@ -26,7 +26,7 @@ export async function installNativeMenu(onRun: (id: CommandId) => void): Promise
       accelerator: def.shortcut && !def.keyOnly ? accelerator(def.shortcut) : undefined,
       action: () => onRun(id),
     };
-    const item = def.submenu ? await CheckMenuItem.new({ ...opts, checked: false }) : await MenuItem.new(opts);
+    const item = def.submenu || def.check ? await CheckMenuItem.new({ ...opts, checked: false }) : await MenuItem.new(opts);
     items.set(id, item);
     return item;
   };
