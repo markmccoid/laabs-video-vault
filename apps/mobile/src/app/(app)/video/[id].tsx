@@ -26,7 +26,7 @@ import { progressStore, useProgressRecorder } from "@/lib/watchProgress";
 export default function Player() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: Id<"videos"> }>();
+  const { id, autoplay } = useLocalSearchParams<{ id: Id<"videos">; autoplay?: string }>();
   const video = useQuery(api.videos.get, { videoId: id });
   const data = useFolders();
   const siblings = useQuery(
@@ -118,6 +118,7 @@ export default function Player() {
           playbackRate={rate}
           onPlayingChange={onPlayingChange}
           initialPosition={resumeAt}
+          autoPlay={autoplay === "1"}
         />
         <Scrubber position={time.t} duration={duration} onSeek={seek} />
         {!prefs.youtubeControls && (

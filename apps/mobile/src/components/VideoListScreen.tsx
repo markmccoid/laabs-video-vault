@@ -53,6 +53,7 @@ export function VideoListScreen({
   largeTitle = false,
   pathFor,
 }: Props) {
+  const theme = useTheme();
   const selection = useSelection();
   const allIds = (videos ?? []).map((v) => v._id);
   const visibleItems = menuItems.filter((item) => !item.hidden);
@@ -64,9 +65,11 @@ export function VideoListScreen({
         <SelectionToolbars selection={selection} allIds={allIds} mode={mode} />
       ) : (
         <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button disabled={allIds.length === 0} onPress={() => selection.start()}>
-            Select
-          </Stack.Toolbar.Button>
+          {allIds.length > 0 && (
+            <Stack.Toolbar.Button tintColor={theme.text} onPress={() => selection.start()}>
+              Select
+            </Stack.Toolbar.Button>
+          )}
           {visibleItems.length > 0 && (
             <Stack.Toolbar.Menu icon="ellipsis">
               {visibleItems.map((item) => (
