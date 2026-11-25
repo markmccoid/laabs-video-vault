@@ -1,6 +1,7 @@
 import { useMutation } from "convex/react";
 import { router, Stack } from "expo-router";
 import type { ComponentProps, ReactElement } from "react";
+import { View } from "react-native";
 import { VideoBrowser } from "@/components/VideoBrowser";
 import type { VideoListItem } from "@/components/VideoRow";
 import { api, type Id } from "@/lib/api";
@@ -34,11 +35,19 @@ type Props = {
   menuItems?: MenuItem[];
   onPressVideo?: (video: VideoListItem) => void;
   largeTitle?: boolean;
+  /**
+   * Keep `title` as the native title (it labels this screen in the back
+   * button's long-press menu) but draw nothing in the header bar, for screens
+   * that render their own title in the content.
+   */
+  hideHeaderTitle?: boolean;
+  /** Shows a Home button in the header that calls this. */
+  onHome?: () => void;
   pathFor?: (video: VideoListItem) => string | undefined;
 };
 
 /**
- * A screen of video rows: Select + … menu in the header, and in select mode
+ * A screen of video rows: a … menu in the header (Select first), and in select mode
  * a bottom toolbar acting on the selection.
  */
 export function VideoListScreen({
@@ -51,25 +60,29 @@ export function VideoListScreen({
   menuItems = [],
   onPressVideo,
   largeTitle = false,
+  hideHeaderTitle = false,
+  onHome,
   pathFor,
 }: Props) {
   const theme = useTheme();
   const selection = useSelection();
   const allIds = (videos ?? []).map((v) => v._id);
-  const visibleItems = menuItems.filter((item) => !item.hidden);
+  const selectItem: MenuItem = {
+    label: "Select videos",
+    icon: "checkmark.circle",
+    onPress: () => selection.start(),
+    hidden: allIds.length === 0,
+  };
+  const visibleItems = [selectItem, ...menuItems].filter((item) => !item.hidden);
 
   return (
     <>
-      <SelectionTitle selection={selection} title={title} largeTitle={largeTitle} />
+      <SelectionTitle selection={selection} title={title} largeTitle={largeTitle} hideHeaderTitle={hideHeaderTitle} />
       {selection.selecting ? (
         <SelectionToolbars selection={selection} allIds={allIds} mode={mode} />
       ) : (
         <Stack.Toolbar placement="right">
-          {allIds.length > 0 && (
-            <Stack.Toolbar.Button onPress={() => selection.start()}>
-              Select
-            </Stack.Toolbar.Button>
-          )}
+          {onHome && <Stack.Toolbar.Button icon="house" accessibilityLabel="Library" onPress={onHome} />}
           {visibleItems.length > 0 && (
             <Stack.Toolbar.Menu icon="ellipsis">
               {visibleItems.map((item) => (
@@ -102,7 +115,17 @@ export function VideoListScreen({
 }
 
 /** Screen title that becomes "N selected" in select mode. */
-export function SelectionTitle({ selection, title, largeTitle }: { selection: Selection; title: string; largeTitle?: boolean }) {
+export function SelectionTitle({
+  selection,
+  title,
+  largeTitle,
+  hideHeaderTitle,
+}: {
+  selection: Selection;
+  title: string;
+  largeTitle?: boolean;
+  hideHeaderTitle?: boolean;
+}) {
   const n = selection.ids.length;
   return (
     <Stack.Screen
@@ -110,9 +133,16 @@ export function SelectionTitle({ selection, title, largeTitle }: { selection: Se
         title: selection.selecting ? (n === 0 ? "Select videos" : `${n} selected`) : title,
         headerLargeTitle: !!largeTitle && !selection.selecting,
         headerTitleStyle: { fontFamily: fonts.bold },
+        // A function headerTitle replaces the drawn title while `title` still
+        // reaches the native item. It must render a View: null falls back to the text.
+        headerTitle: hideHeaderTitle && !selection.selecting ? EmptyTitle : undefined,
       }}
     />
   );
+}
+
+function EmptyTitle() {
+  return <View />;
 }
 
 /**
