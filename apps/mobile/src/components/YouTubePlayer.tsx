@@ -1,7 +1,7 @@
 import { watchUrl } from "@lvv/core";
 import { Image } from "expo-image";
-import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { type ReactNode, type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewInstance } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
@@ -29,6 +29,9 @@ export type YouTubePlayerHandle = {
   /** Play, starting the player first if it isn't running. */
   play: () => void;
   pause: () => void;
+  /** Fill the screen, turned sideways since the app is portrait-only. Playback carries on. */
+  enterFullscreen: () => void;
+  exitFullscreen: () => void;
 };
 
 type Props = {
@@ -49,6 +52,10 @@ type Props = {
   initialPosition?: number;
   /** Start the player on mount instead of showing the thumbnail (the row menu's Play). */
   autoPlay?: boolean;
+  /** Called when full screen starts or ends. */
+  onFullscreenChange?: (on: boolean) => void;
+  /** Our controls, shown over the video in full screen (tap to show or hide) when YouTube's own are off. */
+  fullscreenControls?: ReactNode;
 };
 
 type PlayerMessage =
@@ -143,6 +150,8 @@ export function YouTubePlayer({
   onPlayingChange,
   initialPosition = 0,
   autoPlay = false,
+  onFullscreenChange,
+  fullscreenControls,
 }: Props) {
   const time = useRef(initialPosition);
   const webview = useRef<WebView<NoExtraProps>>(null);
@@ -153,6 +162,16 @@ export function YouTubePlayer({
   const [resumeAt, setResumeAt] = useState(initialPosition);
   // Bumped when the web process dies, so the next start mounts a fresh WebView.
   const [instance, setInstance] = useState(0);
+  // Full screen keeps the same WebView (moving it to a Modal would reload the
+  // video) and only restyles it: it breaks out of the inline frame to cover the
+  // window, measured from where the frame sits on screen. The screen must not
+  // scroll meanwhile (onFullscreenChange).
+  const [fullscreen, setFullscreen] = useState<{ x: number; y: number } | null>(null);
+  const [showUi, setShowUi] = useState(true);
+  const frameRef = useRef<ViewInstance>(null);
+  const win = useWindowDimensions();
+  const fullscreenCb = useRef(onFullscreenChange);
+  fullscreenCb.current = onFullscreenChange;
 
   // The rate at mount goes into the page; later changes go through injectJavaScript.
   const rateRef = useRef(playbackRate);
@@ -199,6 +218,19 @@ export function YouTubePlayer({
         webview.current?.injectJavaScript("player && player.playVideo(); true;");
       },
       pause: () => webview.current?.injectJavaScript("player && player.pauseVideo(); true;"),
+      enterFullscreen: () => {
+        if (start === null || error !== null) {
+          setError(null);
+          setReady(false);
+          setStart(time.current);
+        }
+        frameRef.current?.measureInWindow((x, y) => {
+          setShowUi(true);
+          setFullscreen({ x, y });
+          fullscreenCb.current?.(true);
+        });
+      },
+      exitFullscreen: () => exitFullscreen(),
     }),
     [start, error],
   );
@@ -228,12 +260,26 @@ export function YouTubePlayer({
    * so go back to the thumbnail; play resumes from the last position.
    */
   const onProcessGone = useCallback(() => {
+    setFullscreen(null);
+    fullscreenCb.current?.(false);
     setReady(false);
     setStart(null);
     setResumeAt(time.current);
     setInstance((i) => i + 1);
     onPlayingChange?.(false);
   }, [onPlayingChange]);
+
+  function exitFullscreen() {
+    setFullscreen(null);
+    fullscreenCb.current?.(false);
+  }
+
+  // Our controls fade after a few seconds; a tap brings them back.
+  useEffect(() => {
+    if (!fullscreen || !showUi) return;
+    const timer = setTimeout(() => setShowUi(false), 4000);
+    return () => clearTimeout(timer);
+  }, [fullscreen, showUi]);
 
   const openInYouTube = () => void Linking.openURL(watchUrl(youtubeId, resumeAt));
 
@@ -254,6 +300,7 @@ export function YouTubePlayer({
   if (html === null) {
     return (
       <Pressable
+        ref={frameRef}
         style={styles.frame}
         onPress={() => setStart(time.current)}
         accessibilityRole="button"
@@ -267,8 +314,8 @@ export function YouTubePlayer({
     );
   }
 
-  return (
-    <View style={styles.frame}>
+  const content = (
+    <>
       <WebView<NoExtraProps>
         key={instance}
         ref={webview}
@@ -302,11 +349,61 @@ export function YouTubePlayer({
           <ActivityIndicator color="#fff" size="large" />
         </View>
       )}
+    </>
+  );
+
+  // The same three Views in both modes, so the WebView is never remounted.
+  const fs = fullscreen;
+  return (
+    <View ref={frameRef} style={[styles.frame, fs && styles.frameOpen]}>
+      <View style={fs ? [styles.backdrop, { left: -fs.x, top: -fs.y, width: win.width, height: win.height }] : StyleSheet.absoluteFill}>
+        <View
+          style={
+            fs
+              ? {
+                  // A landscape box turned a quarter turn, since the app is portrait-only.
+                  position: "absolute",
+                  width: win.height,
+                  height: win.width,
+                  left: (win.width - win.height) / 2,
+                  top: (win.height - win.width) / 2,
+                  transform: [{ rotate: "90deg" }],
+                }
+              : styles.inline
+          }
+        >
+          {content}
+          {fs && (
+            <>
+              {/* YouTube's own controls take taps themselves; otherwise a tap toggles ours. */}
+              {!controls && <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowUi((v) => !v)} accessibilityLabel="Show controls" />}
+              {(showUi || controls) && (
+                <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                  {!controls && showUi && (
+                    <View style={styles.controlsBar} pointerEvents="box-none">
+                      {fullscreenControls}
+                    </View>
+                  )}
+                  <Pressable onPress={exitFullscreen} accessibilityRole="button" accessibilityLabel="Exit full screen" hitSlop={8} style={styles.exit}>
+                    <SymbolView name="arrow.down.right.and.arrow.up.left" size={16} tintColor="#fff" />
+                  </Pressable>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Lets the full-screen box escape the frame and sit over the rest of the screen.
+  frameOpen: { overflow: "visible", zIndex: 100, borderRadius: 0 },
+  backdrop: { position: "absolute", backgroundColor: "#000" },
+  inline: { ...StyleSheet.absoluteFill, borderRadius: 26, overflow: "hidden" },
+  controlsBar: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 48, paddingTop: 24, paddingBottom: 16, backgroundColor: "rgba(0,0,0,0.45)" },
+  exit: { position: "absolute", top: 16, right: 48, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center" },
   frame: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#000", overflow: "hidden", borderRadius: 26 },
   webview: { flex: 1, backgroundColor: "#000" },
   loading: { alignItems: "center", justifyContent: "center" },

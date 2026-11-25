@@ -1,8 +1,9 @@
 import { formatDuration } from "@lvv/core";
-import { ClosedCaption, Pause, Play, RotateCcw, RotateCw, type LucideIcon } from "lucide-react";
+import { MoreHorizontal, Pause, Play, RotateCcw, RotateCw, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { SpeedControl } from "./GravityWell";
 import { Icon } from "./Icon";
+import { ContextMenu } from "./Menu";
 
 /** Seconds the skip back / skip forward buttons jump (iOS's default). */
 export const JUMP_SECONDS = 10;
@@ -45,12 +46,15 @@ type Props = {
   onRateChange: (rate: number) => void;
   captions: boolean;
   onCaptionsChange: (on: boolean) => void;
+  onFullscreen: () => void;
+  onOpenInYouTube: () => void;
   /** Extra buttons at the right end of the bar. */
   children?: ReactNode;
 };
 
 /** Our controls under the player, as on iOS: progress bar, then skip / play / skip and speed. */
-export function PlayerControls({ timeline, knownDuration, playing, onTogglePlay, onSeek, rate, onRateChange, captions, onCaptionsChange, children }: Props) {
+export function PlayerControls({ timeline, knownDuration, playing, onTogglePlay, onSeek, rate, onRateChange, captions, onCaptionsChange, onFullscreen, onOpenInYouTube, children }: Props) {
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const { t, d } = useSyncExternalStore(timeline.subscribe, timeline.get);
   const duration = d || knownDuration;
   // Keep a paused video paused; a running one keeps playing.
@@ -73,18 +77,34 @@ export function PlayerControls({ timeline, knownDuration, playing, onTogglePlay,
           <JumpButton icon={RotateCw} seconds={JUMP_SECONDS} label={`Forward ${JUMP_SECONDS} seconds`} onClick={() => jump(JUMP_SECONDS)} />
         </div>
         <SpeedControl rate={rate} onChange={onRateChange} playing={playing} />
-        <button
-          className="btn btn-icon cc-btn"
-          aria-label="Captions"
-          aria-pressed={captions}
-          title={captions ? "Turn captions off (C)" : "Turn captions on (C)"}
-          onClick={() => onCaptionsChange(!captions)}
-        >
-          <Icon as={ClosedCaption} size={22} />
-        </button>
         <span style={{ flex: 1 }} />
         {children}
+        <button
+          className="btn btn-icon"
+          aria-label="More player options"
+          aria-haspopup="menu"
+          title="Full screen, captions, open in YouTube"
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            // Open upward from the button, which sits near the bottom of the pane.
+            setMenu({ x: r.right - 200, y: r.top - 120 });
+          }}
+        >
+          <Icon as={MoreHorizontal} size={20} />
+        </button>
       </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={[
+            { label: "Full Screen", onSelect: onFullscreen },
+            { label: captions ? "Turn Captions Off" : "Turn Captions On", kbd: "C", onSelect: () => onCaptionsChange(!captions) },
+            { label: "Open in YouTube", onSelect: onOpenInYouTube },
+          ]}
+        />
+      )}
     </div>
   );
 }

@@ -173,6 +173,10 @@ function DetailBody({ video, onClose, ...layout }: { video: Detail; onClose: () 
           onRateChange={setRate}
           captions={captions}
           onCaptionsChange={setCaptions}
+          onFullscreen={() => player.current?.enterFullscreen()}
+          onOpenInYouTube={() => {
+            window.open(watchUrl(video.youtubeId, timeline.get().t), "_blank");
+          }}
         >
           <button className="btn btn-ghost btn-sm" title="Play from the beginning" onClick={() => seek(0)}>
             <Icon as={RotateCcw} size={16} /> Start over

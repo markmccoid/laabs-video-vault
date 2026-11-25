@@ -5,10 +5,10 @@ import { useMutation, useQuery } from "convex/react";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Keyboard, Linking, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Keyboard, Linking, Pressable, ScrollView, type ScrollViewInstance, StatusBar, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotesCard } from "@/components/NotesCard";
-import { PlayerControls } from "@/components/PlayerControls";
+import { FullscreenTransport, PlayerControls } from "@/components/PlayerControls";
 import { Scrubber } from "@/components/Scrubber";
 import { TimestampsCard } from "@/components/TimestampsCard";
 import { Chip, SectionTitle } from "@/components/ui";
@@ -46,6 +46,7 @@ export default function Player() {
   // Each video starts at the default speed (Settings → Player).
   const [rate, setRate] = useState(prefs.defaultRate);
   const [showDescription, setShowDescription] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const scroller = useRef<ScrollViewInstance>(null);
   const notesY = useRef(0);
 
@@ -87,6 +88,12 @@ export default function Player() {
   }
 
   const duration = time.d || video.durationSec || 0;
+  const togglePlay = () => (playing ? player.current?.pause() : player.current?.play());
+  const jump = (delta: number) => {
+    const end = duration || Number.POSITIVE_INFINITY;
+    // Keep a paused video paused; a running one keeps playing.
+    seek(Math.max(0, Math.min(end, time.t + delta)), { play: playing });
+  };
   const location = data.pathFor(video.folderId);
   const folderName = video.folderId ? (data.byId.get(video.folderId)?.name ?? "Folder") : "Inbox";
   const tone = video.folderId ? data.tone(video.folderId) : theme.tones.neutral;
@@ -102,8 +109,10 @@ export default function Player() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <StatusBar hidden={fullscreen} animated />
       <ScrollView
         ref={scroller}
+        scrollEnabled={!fullscreen}
         automaticallyAdjustKeyboardInsets
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
@@ -120,11 +129,18 @@ export default function Player() {
           onPlayingChange={onPlayingChange}
           initialPosition={resumeAt}
           autoPlay={autoplay === "1"}
+          onFullscreenChange={setFullscreen}
+          fullscreenControls={
+            <View style={{ gap: 4 }}>
+              <FullscreenTransport playing={playing} onTogglePlay={togglePlay} jumpBack={prefs.jumpBack} jumpForward={prefs.jumpForward} onJump={jump} />
+              <Scrubber position={time.t} duration={duration} onSeek={seek} onVideo />
+            </View>
+          }
         />
         <Scrubber position={time.t} duration={duration} onSeek={seek} />
         <PlayerControls
           playing={playing}
-          onTogglePlay={() => (playing ? player.current?.pause() : player.current?.play())}
+          onTogglePlay={togglePlay}
           rate={rate}
           onRateChange={setRate}
           captions={prefs.captions}
@@ -132,11 +148,8 @@ export default function Player() {
           ratePicker={prefs.ratePicker}
           jumpBack={prefs.jumpBack}
           jumpForward={prefs.jumpForward}
-          onJump={(delta) => {
-            const end = duration || Number.POSITIVE_INFINITY;
-            // Keep a paused video paused; a running one keeps playing.
-            seek(Math.max(0, Math.min(end, time.t + delta)), { play: playing });
-          }}
+          onJump={jump}
+          onFullscreen={() => player.current?.enterFullscreen()}
           onOpenInYouTube={() => {
             player.current?.pause();
             void Linking.openURL(watchUrl(video.youtubeId, time.t));
@@ -225,8 +238,8 @@ export default function Player() {
         )}
       </ScrollView>
 
-      {/* Floating glass controls */}
-      <View style={[styles.floating, { top: insets.top + 8 }]} pointerEvents="box-none">
+      {/* Floating glass controls (hidden in full screen, which covers the screen) */}
+      <View style={[styles.floating, { top: insets.top + 8 }, fullscreen && { display: "none" }]} pointerEvents="box-none">
         <Host matchContents colorScheme={theme.scheme}>
           <Button onPress={() => router.back()} modifiers={[frame({ width: 44, height: 44 }), glassEffect({ glass: { variant: "regular", interactive: true }, shape: "circle" })]}>
             <SwiftImage systemName="chevron.down" size={17} color={theme.text} />

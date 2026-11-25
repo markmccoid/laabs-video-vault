@@ -1,4 +1,4 @@
-import { Button, Host, Menu, Text as SwiftText } from "@expo/ui/swift-ui";
+import { Button, Host, Image as SwiftImage, Menu, Text as SwiftText } from "@expo/ui/swift-ui";
 import { backgroundOverlay, clipShape, font, foregroundStyle, frame, monospacedDigit } from "@expo/ui/swift-ui/modifiers";
 import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -72,13 +72,14 @@ type Props = {
   /** Seek by a signed number of seconds. */
   onJump: (delta: number) => void;
   onOpenInYouTube: () => void;
+  onFullscreen: () => void;
 };
 
 /**
  * Our controls under the player, shown whether or not YouTube's own controls
  * are on (Settings → Player). Seeking to a point is the Scrubber above.
  */
-export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, captions, onCaptionsChange, ratePicker = "menu", jumpBack, jumpForward, onJump, onOpenInYouTube }: Props) {
+export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, captions, onCaptionsChange, ratePicker = "menu", jumpBack, jumpForward, onJump, onOpenInYouTube, onFullscreen }: Props) {
   const theme = useTheme();
   return (
     <View style={styles.row}>
@@ -101,37 +102,58 @@ export function PlayerControls({ playing, onTogglePlay, rate, onRateChange, capt
         <RateMenu rate={rate} onChange={onRateChange} />
       )}
 
-      <Pressable
-        onPress={() => onCaptionsChange(!captions)}
-        accessibilityRole="button"
-        accessibilityLabel="Captions"
-        accessibilityState={{ selected: captions }}
-        hitSlop={4}
-        style={({ pressed }) => [
-          styles.cc,
-          { backgroundColor: captions ? theme.surface : "transparent", opacity: pressed ? 0.5 : 1 },
-        ]}
-      >
-        <SymbolView name={captions ? "captions.bubble.fill" : "captions.bubble"} size={22} tintColor={captions ? theme.accent : theme.muted} />
-      </Pressable>
-
       <View style={{ flex: 1 }} />
 
-      {/* Icon only, like CC, so the row fits a small iPhone. */}
-      <Pressable
-        onPress={onOpenInYouTube}
-        accessibilityRole="button"
-        accessibilityLabel="Open in YouTube"
-        hitSlop={4}
-        style={({ pressed }) => [styles.cc, { backgroundColor: theme.surface, opacity: pressed ? 0.6 : 1 }]}
-      >
-        <SymbolView name="arrow.up.right.square" size={20} tintColor={theme.text} />
-      </Pressable>
+      {/* One menu for the less-used actions, so the row fits a small iPhone. */}
+      <Host matchContents colorScheme={theme.scheme}>
+        <Menu
+          label={
+            <SwiftImage
+              systemName="ellipsis"
+              size={20}
+              modifiers={[foregroundStyle(theme.text), frame({ width: 44, height: 44 }), backgroundOverlay({ color: theme.surface }), clipShape("circle" as const)]}
+            />
+          }
+        >
+          <Button label="Full Screen" systemImage="arrow.up.left.and.arrow.down.right" onPress={onFullscreen} />
+          <Button
+            label={captions ? "Turn Captions Off" : "Turn Captions On"}
+            systemImage={captions ? "captions.bubble.fill" : "captions.bubble"}
+            onPress={() => onCaptionsChange(!captions)}
+          />
+          <Button label="Open in YouTube" systemImage="arrow.up.right.square" onPress={onOpenInYouTube} />
+        </Menu>
+      </Host>
     </View>
   );
 }
 
-function JumpButton({ symbol, label, onPress }: { symbol: SymbolName; label: string; onPress: () => void }) {
+/** Skip back · play/pause · skip forward, in white, for over the video in full screen. */
+export function FullscreenTransport({
+  playing,
+  onTogglePlay,
+  jumpBack,
+  jumpForward,
+  onJump,
+}: Pick<Props, "playing" | "onTogglePlay" | "jumpBack" | "jumpForward" | "onJump">) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.transport, { alignSelf: "center", gap: 24 }]}>
+      <JumpButton symbol={jumpSymbol("back", jumpBack)} label={`Back ${jumpBack} seconds`} onPress={() => onJump(-jumpBack)} tint="#fff" />
+      <Pressable
+        onPress={onTogglePlay}
+        accessibilityRole="button"
+        accessibilityLabel={playing ? "Pause" : "Play"}
+        style={({ pressed }) => [styles.play, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}
+      >
+        <SymbolView name={playing ? "pause.fill" : "play.fill"} size={20} tintColor={theme.accentText} />
+      </Pressable>
+      <JumpButton symbol={jumpSymbol("forward", jumpForward)} label={`Forward ${jumpForward} seconds`} onPress={() => onJump(jumpForward)} tint="#fff" />
+    </View>
+  );
+}
+
+function JumpButton({ symbol, label, onPress, tint }: { symbol: SymbolName; label: string; onPress: () => void; tint?: string }) {
   const theme = useTheme();
   return (
     <Pressable
@@ -141,7 +163,7 @@ function JumpButton({ symbol, label, onPress }: { symbol: SymbolName; label: str
       hitSlop={4}
       style={({ pressed }) => [styles.jump, { opacity: pressed ? 0.5 : 1 }]}
     >
-      <SymbolView name={symbol} size={24} tintColor={theme.text} />
+      <SymbolView name={symbol} size={24} tintColor={tint ?? theme.text} />
     </Pressable>
   );
 }
@@ -151,5 +173,4 @@ const styles = StyleSheet.create({
   transport: { flexDirection: "row", alignItems: "center", gap: 2 },
   play: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   jump: { width: 40, height: 44, alignItems: "center", justifyContent: "center" },
-  cc: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
 });
