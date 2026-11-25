@@ -47,7 +47,7 @@ type Props = {
 };
 
 /**
- * A screen of video rows: Select + … menu in the header, and in select mode
+ * A screen of video rows: a … menu in the header (Select first), and in select mode
  * a bottom toolbar acting on the selection.
  */
 export function VideoListScreen({
@@ -67,7 +67,13 @@ export function VideoListScreen({
   const theme = useTheme();
   const selection = useSelection();
   const allIds = (videos ?? []).map((v) => v._id);
-  const visibleItems = menuItems.filter((item) => !item.hidden);
+  const selectItem: MenuItem = {
+    label: "Select videos",
+    icon: "checkmark.circle",
+    onPress: () => selection.start(),
+    hidden: allIds.length === 0,
+  };
+  const visibleItems = [selectItem, ...menuItems].filter((item) => !item.hidden);
 
   return (
     <>
@@ -77,11 +83,6 @@ export function VideoListScreen({
       ) : (
         <Stack.Toolbar placement="right">
           {onHome && <Stack.Toolbar.Button icon="house" accessibilityLabel="Library" onPress={onHome} />}
-          {allIds.length > 0 && (
-            <Stack.Toolbar.Button onPress={() => selection.start()}>
-              Select
-            </Stack.Toolbar.Button>
-          )}
           {visibleItems.length > 0 && (
             <Stack.Toolbar.Menu icon="ellipsis">
               {visibleItems.map((item) => (

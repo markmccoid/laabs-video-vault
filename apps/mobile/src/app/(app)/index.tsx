@@ -43,9 +43,11 @@ export default function Library() {
           </Stack.Toolbar>
           <Stack.Toolbar placement="right">
             {!!inbox?.length && (
-              <Stack.Toolbar.Button onPress={() => selection.start()}>
-                Select
-              </Stack.Toolbar.Button>
+              <Stack.Toolbar.Menu icon="ellipsis" accessibilityLabel="More">
+                <Stack.Toolbar.MenuAction icon="checkmark.circle" onPress={() => selection.start()}>
+                  Select videos
+                </Stack.Toolbar.MenuAction>
+              </Stack.Toolbar.Menu>
             )}
             <Stack.Toolbar.Menu icon="plus" variant="prominent" tintColor={theme.accent} accessibilityLabel="Add">
               <Stack.Toolbar.MenuAction icon="link" onPress={() => router.push("/add")}>
