@@ -70,7 +70,10 @@ export default function FolderScreen() {
 
   return (
     <VideoListScreen
-      title=""
+      title={folder?.name ?? ""}
+      hideHeaderTitle
+      // At level 1, Back already goes home.
+      onHome={level > 1 ? () => router.dismissTo("/") : undefined}
       videos={videos}
       header={header}
       emptyTitle="No videos here yet"
