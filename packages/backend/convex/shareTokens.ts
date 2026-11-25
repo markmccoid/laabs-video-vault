@@ -43,6 +43,21 @@ export const insert = internalMutation({
   },
 });
 
+/**
+ * Revoke every share token a user holds (after a password reset). Internal, so
+ * the userId comes from the auth provider, never the client.
+ */
+export const revokeAllForUser = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const tokens = await ctx.db
+      .query("shareTokens")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .take(MAX_TOKENS_PER_USER + 1);
+    for (const token of tokens) await ctx.db.delete(token._id);
+  },
+});
+
 /** Revoke this device's token (on sign-out). */
 export const revoke = mutation({
   args: { tokenId: v.id("shareTokens") },

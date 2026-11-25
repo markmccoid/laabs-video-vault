@@ -14,6 +14,7 @@ import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_capture from "../lib/capture.js";
 import type * as lib_hardDelete from "../lib/hardDelete.js";
+import type * as lib_passwordReset from "../lib/passwordReset.js";
 import type * as lib_search from "../lib/search.js";
 import type * as lib_shareToken from "../lib/shareToken.js";
 import type * as lib_tags from "../lib/tags.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/capture": typeof lib_capture;
   "lib/hardDelete": typeof lib_hardDelete;
+  "lib/passwordReset": typeof lib_passwordReset;
   "lib/search": typeof lib_search;
   "lib/shareToken": typeof lib_shareToken;
   "lib/tags": typeof lib_tags;
