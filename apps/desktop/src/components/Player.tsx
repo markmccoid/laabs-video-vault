@@ -7,6 +7,8 @@ export type PlayerHandle = {
   currentTime: () => number;
   /** Play if paused or not started, pause if playing. */
   togglePlay: () => void;
+  /** Show the player full screen (Esc leaves). */
+  enterFullscreen: () => void;
 };
 
 const ORIGIN = "https://www.youtube-nocookie.com";
@@ -78,6 +80,12 @@ export const Player = forwardRef<PlayerHandle, Props>(
         time.current = seconds;
       },
       currentTime: () => time.current,
+      enterFullscreen: () => {
+        // The iframe is `allow="fullscreen"`; fall back to the player box if the webview refuses it.
+        const el = frame.current;
+        const box = el?.parentElement;
+        el?.requestFullscreen?.().catch(() => box?.requestFullscreen?.().catch(() => {}));
+      },
       togglePlay: () => {
         const playing = state.current === 1;
         post({ event: "command", func: playing ? "pauseVideo" : "playVideo", args: [] });

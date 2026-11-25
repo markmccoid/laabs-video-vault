@@ -10,6 +10,8 @@ type Props = {
   /** Video length in seconds; 0 when unknown (the bar is then inert). */
   duration: number;
   onSeek: (seconds: number) => void;
+  /** Drawn over the video (full screen): light track and times. */
+  onVideo?: boolean;
 };
 
 /**
@@ -17,8 +19,10 @@ type Props = {
  * scrub (the time label follows your finger and the seek happens on release).
  * Horizontal drags only, so vertical swipes still scroll the screen.
  */
-export function Scrubber({ position, duration, onSeek }: Props) {
+export function Scrubber({ position, duration, onSeek, onVideo = false }: Props) {
   const theme = useTheme();
+  const trackColor = onVideo ? "rgba(255,255,255,0.3)" : theme.surface;
+  const timeColor = onVideo ? "rgba(255,255,255,0.85)" : theme.muted;
   const [width, setWidth] = useState(0);
   // Where the finger is while dragging.
   const [drag, setDrag] = useState<number | null>(null);
@@ -87,7 +91,7 @@ export function Scrubber({ position, duration, onSeek }: Props) {
             commit(Math.max(0, Math.min(duration, shown + step)));
           }}
         >
-          <View style={[styles.track, scrubbing && styles.trackActive, { backgroundColor: theme.surface }]}>
+          <View style={[styles.track, scrubbing && styles.trackActive, { backgroundColor: trackColor }]}>
             <View style={[styles.fill, { backgroundColor: theme.accent, width: `${pct}%` }]} />
           </View>
           {enabled && (
@@ -103,8 +107,8 @@ export function Scrubber({ position, duration, onSeek }: Props) {
         </View>
       </GestureDetector>
       <View style={styles.times}>
-        <Text style={[type.metaStrong, { color: scrubbing ? theme.accent : theme.muted }]}>{formatDuration(shown)}</Text>
-        <Text style={[type.metaStrong, { color: theme.muted }]}>{duration ? formatDuration(duration) : "–:––"}</Text>
+        <Text style={[type.metaStrong, { color: scrubbing ? theme.accent : timeColor }]}>{formatDuration(shown)}</Text>
+        <Text style={[type.metaStrong, { color: timeColor }]}>{duration ? formatDuration(duration) : "–:––"}</Text>
       </View>
     </View>
   );
